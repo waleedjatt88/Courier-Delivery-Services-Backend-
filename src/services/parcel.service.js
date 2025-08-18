@@ -40,28 +40,31 @@ const createParcel = async (parcelData, customerId) => {
 
    
     try {
-        
         const customer = await User.findByPk(customerId);
 
         if (customer) {
-            
+            // Naya, behtar message
             const message = `
 Hello ${customer.fullName},
 
-Your parcel has been successfully booked!
+Thank you for booking with DevGo! Your parcel is confirmed and will be picked up soon.
 
-Here are your details:
-- Tracking Number: ${newParcel.trackingNumber}
-- Pickup Address: ${newParcel.pickupAddress}
-- Delivery Address: ${newParcel.deliveryAddress}
-- Total Charges: Rs. ${newParcel.deliveryCharge}
+**Booking Summary:**
 
-You can track your parcel's status on our website using the tracking number.
+- **Tracking Number:** ${newParcel.trackingNumber}
+- **Status:** ${newParcel.status}
 
-Thank you for using our service!
+- **Pickup From:** ${newParcel.pickupAddress}
+- **Deliver To:** ${newParcel.deliveryAddress}
+
+- **Total Charges:** Rs. ${newParcel.deliveryCharge}
+- **Payment Method:** ${newParcel.paymentMethod}
+
+You can track your parcel's live status on our website using the tracking number.
+
+Thanks for choosing DevGo!
             `;
 
-            // 3. Email bhejo
             await sendEmail({
                 email: customer.email,
                 subject: `Parcel Booked! Your Tracking ID: ${newParcel.trackingNumber}`,
@@ -71,7 +74,6 @@ Thank you for using our service!
         }
     } catch (error) {
         console.error(`!!! Could not send booking confirmation email:`, error);
-       
     }
    
 
@@ -133,9 +135,69 @@ const getParcelById = async (parcelId) => {
     return parcel;
 };
 
+/**
+ * Assigns a delivery agent to a specific parcel. (Admin only)
+ * @param {number} parcelId - The ID of the parcel to be updated.
+ * @param {number} agentId - The ID of the agent to be assigned.
+ * @returns {object} The updated parcel object.
+ */
+const assignAgentToParcel = async (parcelId, agentId) => {
+    // Step 1: Pehle, parcel ko dhoondo
+    const parcel = await db.BookingParcel.findByPk(parcelId);
+    if (!parcel) {
+        throw new Error("Parcel not found with this ID.");
+    }
+
+    // Step 2: Yeh check karo ki parcel pehle se hi assigned to nahi hai
+    if (parcel.status !== 'pending') {
+        throw new Error(`This parcel cannot be assigned. Its status is already '${parcel.status}'.`);
+    }
+
+    // Step 3: Ab, agent ko dhoondo
+    const agent = await db.User.findByPk(agentId);
+    if (!agent) {
+        throw new Error("Agent not found with this ID.");
+    }
+
+    // Step 4 (Security Check): Confirm karo ki yeh user asal mein 'agent' hai
+    if (agent.role !== 'agent') {
+        throw new Error(`User with ID ${agentId} is not a delivery agent.`);
+    }
+
+    // Step 5: Agar sab theek hai, to parcel ko update karo
+    parcel.agentId = agentId;
+    parcel.status = 'scheduled'; // Status ko 'pending' se 'scheduled' kar do
+
+    await parcel.save(); // Badlaav ko database mein save karo
+
+    return parcel;
+};
+
+/**
+ * Retrieves all parcels assigned to a specific agent.
+ * @param {number} agentId - The ID of the logged-in agent.
+ * @returns {Array} A list of parcels assigned to the agent.
+ */
+const getParcelsByAgentId = async (agentId) => {
+    const parcels = await db.BookingParcel.findAll({
+        where: {
+            agentId: agentId
+        },
+        order: [['createdAt', 'ASC']], // Puraane parcel upar taaki pehle deliver hon
+        include: {
+            model: db.User,
+            as: 'Customer', // Agent ko customer ki details bhi dikhao
+            attributes: ['fullName', 'phoneNumber']
+        }
+    });
+    return parcels;
+};
+
 module.exports = {
     createParcel,
     getMyParcels,
     getAllParcels,
-    getParcelById 
+    getParcelById,
+    assignAgentToParcel,
+    getParcelsByAgentId 
 };

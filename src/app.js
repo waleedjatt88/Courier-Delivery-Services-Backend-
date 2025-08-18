@@ -17,6 +17,7 @@ try {
     userRoutes = require('./routes/user.routes.js');
     adminRoutes = require('./routes/admin.routes.js');
     parcelRoutes = require('./routes/parcel.routes.js'); 
+     agentRoutes = require('./routes/agent.routes.js'); 
 } catch (error) {
     console.error("!!! FATAL ERROR while requiring routes:", error);
     process.exit(1); 
@@ -56,6 +57,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/agent', agentRoutes);
 app.use('/api/parcels', parcelRoutes);
 // =====================================
 

@@ -48,7 +48,24 @@ const register = async (userData, createdByAdmin = false) => {
     // Email sirf tab bhejo jab Admin nahi bana raha
     if (!createdByAdmin) {
         try {
-            const message = `Hello ${user.fullName},\n\nYour OTP is: ${otp}\n...`;
+            // Naya, behtar message
+            const message = `
+Hello ${user.fullName},
+
+Welcome to DevGo Courier Service!
+
+To complete your registration, please use the following One-Time Password (OTP):
+
+**Your OTP is: ${otp}**
+
+This code is valid for the next 10 minutes.
+
+Please enter this OTP in the app to verify your email address.
+
+Thank you for choosing us!
+DevGo Courier Service Team.
+
+`;
             await sendEmail({ email: user.email, subject: 'Verify Your Email', message });
             console.log(`OTP email sent to: ${user.email}`);
         } catch (error) {
@@ -136,7 +153,21 @@ const forgotPassword = async (email) => {
     await user.save();
 
     try {
-        const message = `You requested a password reset. Your One-Time Password (OTP) is: ${otp}\nThis OTP is valid for 10 minutes.`;
+        // Naya, behtar message
+        const message = `
+Hello,
+
+We received a request to reset the password for your account.
+
+Please use the following One-Time Password (OTP) to proceed:
+
+**Your OTP is: ${otp}**
+
+This OTP is valid for 10 minutes.
+
+Thank you for choosing us!
+DevGo Courier Service Team.
+`;
         await sendEmail({ email: user.email, subject: 'Courier App - Password Reset OTP', message });
     } catch (error) {
         throw new Error('Email could not be sent. Please try again later.');

@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     pickupAddress: DataTypes.TEXT, deliveryAddress: DataTypes.TEXT, packageWeight: DataTypes.FLOAT,
     packageSize: DataTypes.STRING, packageContent: DataTypes.STRING, pickupSlot: DataTypes.STRING,
     specialInstructions: DataTypes.TEXT, deliveryCharge: DataTypes.FLOAT,
-    status: DataTypes.ENUM('pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled'),
+    status: DataTypes.ENUM('pending', 'in_transit', 'scheduled', 'out_for_delivery', 'delivered', 'cancelled'),
     paymentMethod: DataTypes.ENUM('COD', 'JAZZCASH'),
     paymentStatus: DataTypes.STRING
   }, {

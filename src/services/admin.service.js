@@ -24,7 +24,21 @@ const deleteUser = async (userId) => {
     return { message: "User deleted successfully." };
 };
 
+/**
+ * Updates a user by their ID. (Admin only)
+ */
+const updateUser = async (userId, updateData) => {
+    const user = await User.findByPk(userId);
+    if (!user) {
+        throw new Error("User not found");
+    }
+    // Password ya sensitive fields yahan update na karein (unless needed)
+    await user.update(updateData);
+    return user;
+};
+
 module.exports = {
     getAllUsers,
-    deleteUser
+    deleteUser,
+    updateUser // Naya function export karein
 };

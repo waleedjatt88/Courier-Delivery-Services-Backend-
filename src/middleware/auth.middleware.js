@@ -68,8 +68,20 @@ const refreshCookie = (req, res, next) => {
 };
 
 
+const isAgent = (req, res, next) => {
+    // Yeh function hamesha 'verifyToken' ke BAAD chalega
+    if (req.user && req.user.role === 'agent') {
+        // Agar user ka role 'agent' hai, to request ko aage jane do
+        next();
+    } else {
+        // Agar role 'agent' nahi hai, to error bhej do
+        res.status(403).json({ message: "Access denied. Agent role required." });
+    }
+};
+
 module.exports = {
     verifyToken,
     isAdmin,
-     refreshCookie
+    isAgent, 
+    refreshCookie
 };
