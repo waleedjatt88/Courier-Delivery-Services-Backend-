@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     packageSize: DataTypes.STRING, packageContent: DataTypes.STRING, pickupSlot: DataTypes.STRING,
     specialInstructions: DataTypes.TEXT, deliveryCharge: DataTypes.FLOAT,
     status: DataTypes.ENUM('pending', 'in_transit', 'scheduled', 'out_for_delivery', 'delivered', 'cancelled'),
-    paymentMethod: DataTypes.ENUM('COD', 'JAZZCASH'),
+    paymentMethod: DataTypes.ENUM('COD', 'JAZZCASH','STRIPE'),
     paymentStatus: DataTypes.STRING
   }, {
     sequelize,
