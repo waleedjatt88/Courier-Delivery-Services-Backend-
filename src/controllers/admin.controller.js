@@ -79,8 +79,8 @@ const updateUser = async (req, res) => {
  */
 const assignAgent = async (req, res) => {
     try {
-        const parcelId = req.params.id; // URL se parcel ki ID nikalo
-        const { agentId } = req.body; // Body se agent ki ID nikalo
+        const parcelId = req.params.id; 
+        const { agentId } = req.body; 
 
         // Validation
         if (!agentId) {
@@ -95,7 +95,6 @@ const assignAgent = async (req, res) => {
         });
 
     } catch (error) {
-        // Agar service "Not Found" jaisa error bheje, to 404 status do
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
         }
@@ -110,5 +109,5 @@ module.exports = {
     getAllParcels,
     getParcelById,
     updateUser,
-    assignAgent // Naye function ko export karein
+    assignAgent 
 };

@@ -1,5 +1,5 @@
 'use strict';
-module.exports = { // Ya 'export default'
+module.exports = { 
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('Users', 'passwordResetToken', {
       type: Sequelize.STRING,

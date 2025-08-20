@@ -1,15 +1,13 @@
 'use strict';
-module.exports = { // Agar aapka project ES module hai to isko 'export default' karein
+module.exports = { 
   async up(queryInterface, Sequelize) {
-    // 'otp' column add karo
     await queryInterface.addColumn('Users', 'otp', {
       type: Sequelize.STRING,
-      allowNull: true // Yeh optional hai, sirf zaroorat ke waqt istemal hoga
+      allowNull: true 
     });
-    // 'otpExpires' column add karo
     await queryInterface.addColumn('Users', 'otpExpires', {
       type: Sequelize.DATE,
-      allowNull: true // Yeh bhi optional hai
+      allowNull: true 
     });
   },
 

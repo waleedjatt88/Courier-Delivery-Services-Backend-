@@ -13,7 +13,6 @@ const createParcel = async (req, res) => {
     // Step 2: Logged-in user ki ID token se nikalo (yeh verifyToken se aati hai)
     const customerId = req.user.id;
 
-    // Validation: Zaroori cheezein check karo
     if (
       !parcelData.pickupAddress ||
       !parcelData.deliveryAddress ||
@@ -60,5 +59,5 @@ const getMyParcels = async (req, res) => {
 
 module.exports = {
   createParcel,
-  getMyParcels, // Naye function ko export karein
+  getMyParcels, 
 };

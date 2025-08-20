@@ -2,19 +2,17 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
-    // 1. Transporter banayein (woh service jo email bhejti hai)
     const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
-        port: 587, // Standard port for SMTP
-        secure: false, // true for 465, false for other ports
+        port: 587, 
+        secure: false, 
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
     });
 
-    // 1. Email ke liye HTML template banao
-    // Ismein humne aapke logo ke liye <img> tag daala hai
+    
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; text-align: center; color: #333;">
         <div style="padding: 20px; border-bottom: 2px solid #eee;">
@@ -35,18 +33,17 @@ const sendEmail = async (options) => {
         </div>
       </div>
     `;
-    // ------------------------------------------
+    
 
-    // 2. Email ke options define karo
     const mailOptions = {
         from: `Courier App <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
-        text: options.message, // Yeh plain text version hai, un clients ke liye jo HTML support nahi karte
-        html: emailHtml     // Yeh naya HTML version hai
+        text: options.message, 
+        html: emailHtml     
     };
 
-    // 3. Asal mein email bhejo
+    
     await transporter.sendMail(mailOptions);
 };
 

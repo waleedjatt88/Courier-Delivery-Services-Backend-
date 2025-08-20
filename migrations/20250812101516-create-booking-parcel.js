@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('BookingParcels', { // Table ka naam 'BookingParcels' hoga
+    await queryInterface.createTable('BookingParcels', { 
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -16,19 +16,19 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Users', // 'Users' table se link hai
+          model: 'Users', 
           key: 'id'
         },
-        onDelete: 'CASCADE' // Agar user delete ho, to uske parcel bhi delete ho jaayein
+        onDelete: 'CASCADE' 
       },
       agentId: {
         type: Sequelize.INTEGER,
-        allowNull: true, // Shuru mein agent assign nahi hoga
+        allowNull: true, 
         references: {
           model: 'Users',
           key: 'id'
         },
-        onDelete: 'SET NULL' // Agar agent delete ho, to parcel se uska link hat jaaye
+        onDelete: 'SET NULL'
       },
       pickupAddress: { type: Sequelize.TEXT, allowNull: false },
       deliveryAddress: { type: Sequelize.TEXT, allowNull: false },

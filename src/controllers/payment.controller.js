@@ -8,20 +8,16 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
  */
 const createCheckoutSession = async (req, res) => {
     try {
-        // Step 1: Logged-in user ki ID token se nikalo
         const customerId = req.user.id;
         
-        // Step 2: Body se parcel ki ID nikalo
         const { parcelId } = req.body;
 
         if (!parcelId) {
             return res.status(400).json({ message: "Parcel ID is required." });
         }
 
-        // Step 3: Service ko call karke session banao
         const session = await paymentService.createCheckoutSession(parcelId, customerId);
 
-        // Step 4: Frontend ko session ki ID wapas bhejo
         res.status(200).json(session);
 
     } catch (error) {
@@ -51,9 +47,9 @@ const stripeWebhook = (req, res) => {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         console.log('--- 3. Event is checkout.session.completed. Calling service... ---'); // Checkpoint 3
-        console.log('Session Metadata:', session.metadata); // Zaroori: Dekhein metadata aa raha hai ya nahi
+        console.log('Session Metadata:', session.metadata); 
 
-        // Service ko call karo
+        
         paymentService.handleSuccessfulPayment(session)
             .then(() => console.log("--- 4. Service finished successfully. ---")) // Checkpoint 4
             .catch(err => console.error("!!! ERROR inside handleSuccessfulPayment service:", err));
@@ -64,5 +60,5 @@ const stripeWebhook = (req, res) => {
 
 module.exports = {
     createCheckoutSession,
-    stripeWebhook // Naye function ko export karein
+    stripeWebhook 
 };

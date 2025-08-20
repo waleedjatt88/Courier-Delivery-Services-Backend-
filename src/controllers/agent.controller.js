@@ -3,7 +3,6 @@ const parcelService = require('../services/parcel.service.js');
 
 const getMyAssignedParcels = async (req, res) => {
     try {
-        // Logged-in agent ki ID token se nikalo (yeh verifyToken se aati hai)
         const agentId = req.user.id;
         const parcels = await parcelService.getParcelsByAgentId(agentId);
         res.status(200).json({ parcels });
@@ -14,22 +13,20 @@ const getMyAssignedParcels = async (req, res) => {
 
 const getMyParcelDetails = async (req, res) => {
     try {
-        const agentId = req.user.id; // Logged-in agent ki ID
-        const parcelId = req.params.id; // URL se parcel ki ID
+        const agentId = req.user.id; 
+        const parcelId = req.params.id; 
 
-        // Service se parcel ki details nikalo
         const parcel = await parcelService.getParcelById(parcelId);
 
         if (!parcel) {
             return res.status(404).json({ message: "Parcel not found." });
         }
 
-        // --- SECURITY CHECK YAHAN HAI ---
-        // Check karo ki is parcel ka agentId, logged-in agent ki ID se match karta hai ya nahi
+        
         if (parcel.agentId !== agentId) {
             return res.status(403).json({ message: "Forbidden: You are not authorized to view this parcel." });
         }
-        // ---------------------------------
+        
 
         res.status(200).json({ parcel });
 

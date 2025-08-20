@@ -5,9 +5,13 @@ const router = express.Router();
 const paymentController = require('../controllers/payment.controller.js');
 const { verifyToken, refreshCookie } = require('../middleware/auth.middleware.js');
 
-// === NAYA ROUTE: CREATE A STRIPE CHECKOUT SESSION ===
-// Yeh ek protected route hai, sirf logged-in user hi payment kar sakta hai.
-// Final URL: POST /api/payments/create-checkout-session
+
 router.post('/create-checkout-session', [verifyToken, refreshCookie], paymentController.createCheckoutSession);
+
+// Stripe webhook needs raw body
+router.post('/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
+
+// For testing webhook locally with Stripe CLI
+// stripe listen --forward-to localhost:3000/api/payments/webhook
 
 module.exports = router;

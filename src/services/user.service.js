@@ -1,4 +1,3 @@
-// src/services/user.service.js
 
 const db = require('../../models');
 const User = db.User;
@@ -23,13 +22,13 @@ const updateUser = async (userId, updateData) => {
     }
 
      if (updateData.role) {
-        // ... aur naya role 'admin' ya 'agent' hai...
+        
         if (updateData.role === 'admin' || updateData.role === 'agent') {
-            // ... to 'isVerified' ko automatically 'true' kar do.
+        
             updateData.isVerified = true;
         }
     }
-    // Only update the user's own data. We'll add more security here later.
+    
     const updatedUser = await user.update(updateData);
     return updatedUser;
 };
@@ -39,7 +38,6 @@ const deleteMyProfile = async (userId) => {
     if (!user) {
         throw new Error("User not found");
     }
-    // Agent ko delete hone se rokne ka check yahan bhi daal sakte hain
     if (user.role === 'agent') {
         throw new Error("Agents cannot delete their own profiles.");
     }
@@ -50,5 +48,5 @@ const deleteMyProfile = async (userId) => {
 module.exports = {
     getUserById,
     updateUser,
-    deleteMyProfile // Naye function ko export karein
+    deleteMyProfile
 };

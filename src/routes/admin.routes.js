@@ -1,13 +1,10 @@
-// src/routes/admin.routes.js - UPDATED VERSION
 
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller.js');
 
 
-// Hum yahan authController ko bhi import karenge, kyunki 'register' function uske paas hai
 const authController = require('../controllers/auth.controller.js');
-// ===============================
 
 const { verifyToken, isAdmin, refreshCookie } = require('../middleware/auth.middleware.js');
 

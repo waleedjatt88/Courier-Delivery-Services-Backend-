@@ -1,19 +1,15 @@
-// src/controllers/auth.controller.js - MUKAMMAL UPDATED VERSION
+
 
 const authService = require('../services/auth.service.js');
 
-// =========================================================================
-//  YEH FUNCTIONS PEHLE SE SAHI HAIN - Inmein koi badlaav nahi hai
-// =========================================================================
+
 
 exports.register = async (req, res) => {
     try {
-        // === PHONE NUMBER VALIDATION ===
         const { phoneNumber } = req.body;
        if (!/^\d{11}$/.test(phoneNumber)) {
             return res.status(400).json({ message: "Phone number must be numeric and exactly 11 digits (e.g. 03XXXXXXXXX)." });
         }
-        // ==============================
 
         const createdByAdmin = (req.user && req.user.role === 'admin');
         const user = await authService.register(req.body, createdByAdmin);
@@ -51,11 +47,9 @@ exports.verifyOtp = async (req, res) => {
         if (!email || !otp) {
             return res.status(400).json({ message: "Email and OTP are required." });
         }
-        // === OTP VALIDATION ===
         if (!/^\d{4,8}$/.test(otp)) {
             return res.status(400).json({ message: "OTP must be numeric (4-8 digits)." });
         }
-        // =====================
 
         const result = await authService.verifyOtp(email, otp);
         res.status(200).json(result);
@@ -64,13 +58,8 @@ exports.verifyOtp = async (req, res) => {
     }
 };
 
-// =========================================================================
-//  FORGOT PASSWORD KE NAYE CONTROLLERS YAHAN HAIN
-// =========================================================================
 
-/**
- * Step 1 Controller: Forgot Password
- */
+
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -84,9 +73,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-/**
- * Step 2 Controller: Verify Password Reset OTP
- */
+
 exports.verifyPasswordResetOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -94,15 +81,13 @@ exports.verifyPasswordResetOtp = async (req, res) => {
         return res.status(400).json({ message: "Email and OTP are required." });
     }
     const result = await authService.verifyPasswordResetOtp(email, otp);
-    res.status(200).json(result); // Yeh frontend ko 'resetToken' wapas dega
+    res.status(200).json(result); 
   } catch (error) {
     res.status(400).json({ message: "OTP verification failed: " + error.message });
   }
 };
 
-/**
- * Step 3 Controller: Reset Password
- */
+
 exports.resetPassword = async (req, res) => {
     try {
         const { resetToken, password, confirmPassword } = req.body;
@@ -123,10 +108,22 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-    // 'jwt' naam ki cookie ko clear kar do
     res.cookie('jwt', '', {
         httpOnly: true,
-        expires: new Date(0) // Cookie ko foran expire kar do
+        expires: new Date(0) 
     });
     res.status(200).json({ message: "Logout successful" });
+};
+
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
+    }
+    const result = await authService.resendOtp(email);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Error resending OTP: " + error.message });
+  }
 };

@@ -32,7 +32,6 @@ const updateUser = async (userId, updateData) => {
     if (!user) {
         throw new Error("User not found");
     }
-    // Password ya sensitive fields yahan update na karein (unless needed)
     await user.update(updateData);
     return user;
 };
@@ -40,5 +39,5 @@ const updateUser = async (userId, updateData) => {
 module.exports = {
     getAllUsers,
     deleteUser,
-    updateUser // Naya function export karein
+    updateUser 
 };

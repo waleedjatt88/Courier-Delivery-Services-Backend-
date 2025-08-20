@@ -11,30 +11,30 @@ module.exports = {
       },
       fullName: {
         type: Sequelize.STRING,
-        allowNull: false // Hum chahte hain ke naam zaroori ho
+        allowNull: false 
       },
       email: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true // Email unique hona chahiye
+        unique: true 
       },
       phoneNumber: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true // Phone number bhi unique hona chahiye
+        unique: true 
       },
       passwordHash: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      role: { // Yeh humne yahan professional tareeqe se add kiya hai
+      role: { 
         type: Sequelize.ENUM('customer', 'admin', 'agent'),
         allowNull: false,
         defaultValue: 'customer'
       },
       isVerified: {
         type: Sequelize.BOOLEAN,
-        defaultValue: false // By default, user verified nahi hoga
+        defaultValue: false 
       },
       createdAt: {
         allowNull: false,
