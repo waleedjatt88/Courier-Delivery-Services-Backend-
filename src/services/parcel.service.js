@@ -19,8 +19,8 @@ const createParcel = async (parcelData, customerId) => {
      const uniquePart = uuidv4().split('-').pop().toUpperCase(); 
     const trackingNumber = `PK-${uniquePart}`;
 
-    const baseCharge = 150; // Base rate (e.g., Rs. 150)
-    const chargePerKg = 50; // Har extra kg par Rs. 50
+    const baseCharge = 150; 
+    const chargePerKg = 50; 
     const deliveryCharge = baseCharge + ((parcelData.packageWeight - 1) * chargePerKg);
      const { customerId: clientCustomerId, ...safeParcelData } = parcelData;
 

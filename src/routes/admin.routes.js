@@ -14,11 +14,11 @@ router.delete('/users/:id', [verifyToken, isAdmin, refreshCookie], adminControll
 router.post('/users', [verifyToken, isAdmin, refreshCookie], authController.register);
 router.patch('/users/:id', [verifyToken, isAdmin, refreshCookie], adminController.updateUser);
 
-// Route for Admin to get all parcels
+
 router.get('/parcels', [verifyToken, isAdmin, refreshCookie], adminController.getAllParcels);
 router.get('/parcels/:id', [verifyToken, isAdmin, refreshCookie], adminController.getParcelById);
 
-// Final URL: PATCH /api/admin/parcels/:id/assign
+
 router.patch('/parcels/:id/assign', [verifyToken, isAdmin, refreshCookie], adminController.assignAgent);
 
 

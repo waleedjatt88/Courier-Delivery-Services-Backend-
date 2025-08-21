@@ -1,10 +1,8 @@
-// src/controllers/admin.controller.js
 
 const adminService = require('../services/admin.service.js');
 const parcelService = require('../services/parcel.service.js');
 
 
-// Controller to get all users (Admin only)
 const getAllUsers = async (req, res) => {
     try {
         const users = await adminService.getAllUsers();
@@ -14,7 +12,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// Controller to delete a user (Admin only)
 const deleteUser = async (req, res) => {
     try {
         await adminService.deleteUser(req.params.id);
@@ -27,7 +24,6 @@ const deleteUser = async (req, res) => {
     }
 };
 
-//   Controller for Admin to get all parcels in the system.
  
 const getAllParcels = async (req, res) => {
     try {
@@ -41,7 +37,6 @@ const getAllParcels = async (req, res) => {
 
 
 
-//  Controller for Admin to get a single parcel by its ID.
 
 const getParcelById = async (req, res) => {
     try {
@@ -59,7 +54,6 @@ const getParcelById = async (req, res) => {
     }
 };
 
-// Controller to update a user (Admin only)
 const updateUser = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -74,15 +68,12 @@ const updateUser = async (req, res) => {
     }
 };
 
-/**
- * Controller for Admin to assign an agent to a parcel.
- */
+
 const assignAgent = async (req, res) => {
     try {
         const parcelId = req.params.id; 
         const { agentId } = req.body; 
 
-        // Validation
         if (!agentId) {
             return res.status(400).json({ message: "Agent ID is required in the body." });
         }
@@ -98,7 +89,6 @@ const assignAgent = async (req, res) => {
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
         }
-        // Baaki errors ke liye
         res.status(400).json({ message: "Assignment failed: " + error.message });
     }
 };

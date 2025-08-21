@@ -1,16 +1,11 @@
-// src/controllers/parcel.controller.js
 
 const parcelService = require("../services/parcel.service.js");
 
-/**
- * Controller to handle new parcel booking.
- */
+
 const createParcel = async (req, res) => {
   try {
-    // Step 1: Frontend se body mein parcel ka data lo
     const parcelData = req.body;
 
-    // Step 2: Logged-in user ki ID token se nikalo (yeh verifyToken se aati hai)
     const customerId = req.user.id;
 
     if (
@@ -26,10 +21,8 @@ const createParcel = async (req, res) => {
         });
     }
 
-    // Step 3: Service ko call karo aur data pass karo
     const newParcel = await parcelService.createParcel(parcelData, customerId);
 
-    // Step 4: Kamyabi ka response bhejo
     res
       .status(201)
       .json({ message: "Parcel booked successfully!", parcel: newParcel });
@@ -41,9 +34,7 @@ const createParcel = async (req, res) => {
   }
 };
 
-/**
- * Controller to get all parcels for the logged-in customer.
- */
+
 const getMyParcels = async (req, res) => {
   try {
     const customerId = req.user.id;

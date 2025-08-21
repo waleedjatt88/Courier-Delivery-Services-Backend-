@@ -17,9 +17,6 @@ const paymentController = require('./controllers/payment.controller.js');
 
 const app = express();
 
-// =========================================================================
-//                          MIDDLEWARE SETUP
-// =========================================================================
 
 const allowedOrigins = [
     'http://localhost:3000',
@@ -45,9 +42,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-// =========================================================================
-//                          API ROUTES
-// =========================================================================
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -62,9 +57,6 @@ app.get('/', (req, res) => {
 });
 
 
-// =========================================================================
-//                          SERVER START
-// =========================================================================
 
 const PORT = process.env.PORT || 3000;
 
@@ -73,4 +65,6 @@ app.listen(PORT, '0.0.0.0', () => {
 
   
   console.log(`Accessible on your network at: http://192.168.100.239:${PORT}`); 
+    // console.log(`Accessible on your network at: http://192.168.0.105:${PORT}`); 
+
 });

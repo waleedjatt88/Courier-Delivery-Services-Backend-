@@ -49,7 +49,7 @@ Welcome to DevGo Courier Service!
 
 To complete your registration, please use the following One-Time Password (OTP):
 
-**Your OTP is: ${otp}**
+Your OTP is: ${otp}
 
 This code is valid for the next 1 minute.
 
@@ -146,7 +146,7 @@ We received a request to reset the password for your account.
 
 Please use the following One-Time Password (OTP) to proceed:
 
-**Your OTP is: ${otp}**
+Your OTP is: ${otp}
 
 This OTP is valid for 1 minute.
 

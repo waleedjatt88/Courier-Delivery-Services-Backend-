@@ -1,11 +1,8 @@
-// src/controllers/payment.controller.js
 
 const paymentService = require('../services/payment.service.js');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-/**
- * Controller to create a Stripe Checkout Session.
- */
+
 const createCheckoutSession = async (req, res) => {
     try {
         const customerId = req.user.id;
