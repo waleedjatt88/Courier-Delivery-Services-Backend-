@@ -29,8 +29,51 @@ const updateUser = async (userId, updateData) => {
     return user;
 };
 
+const blockUser = async (userId) => {
+    const user = await User.findByPk(userId);
+    if (!user) throw new Error("User not found");
+    user.isActive = false;
+    await user.save();
+    return user;
+};
+
+const unblockUser = async (userId) => {
+    const user = await User.findByPk(userId);
+    if (!user) throw new Error("User not found");
+    user.isActive = true;
+    await user.save();
+    return user;
+};
+
+
+const suspendUser = async (userId, days) => {
+    if (!days || days <= 0) {
+        throw new Error("A positive number of days is required for suspension.");
+    }
+    const user = await User.findByPk(userId);
+    if (!user) throw new Error("User not found");
+    
+    const suspensionEndDate = new Date();
+    suspensionEndDate.setDate(suspensionEndDate.getDate() + parseInt(days, 10));
+    
+    user.suspendedUntil = suspensionEndDate;
+    await user.save();
+    return user;
+};
+
+const unsuspendUser = async (userId) => {
+    const user = await User.findByPk(userId);
+    if (!user) throw new Error("User not found");
+    user.suspendedUntil = null; 
+    await user.save();
+    return user;
+};
+
 module.exports = {
     getAllUsers,
     deleteUser,
-    updateUser 
+    blockUser,
+    unblockUser,
+    suspendUser,
+    unsuspendUser
 };

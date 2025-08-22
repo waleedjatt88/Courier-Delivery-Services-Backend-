@@ -12,6 +12,8 @@ const adminRoutes = require('./routes/admin.routes.js');
 const agentRoutes = require('./routes/agent.routes.js');
 const parcelRoutes = require('./routes/parcel.routes.js');
 const paymentRoutes = require('./routes/payment.routes.js');
+const passport = require('passport');
+require('./config/passport-setup.js');
 
 const paymentController = require('./controllers/payment.controller.js');
 
@@ -40,6 +42,8 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), pay
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(passport.initialize());
+
 
 
 
@@ -64,7 +68,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is listening on http://localhost:${PORT}`);
 
   
-  console.log(`Accessible on your network at: http://192.168.100.239:${PORT}`); 
+  console.log(`Accessible on your network at: http://192.168.100.244:${PORT}`); 
     // console.log(`Accessible on your network at: http://192.168.0.105:${PORT}`); 
 
 });

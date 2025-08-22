@@ -1,14 +1,12 @@
-// src/routes/user.routes.js
 
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller.js');
-const { verifyToken, refreshCookie } = require('../middleware/auth.middleware.js'); // isAdmin ki zaroorat nahi
+const { verifyToken, refreshCookie } = require('../middleware/auth.middleware.js'); 
 
-router.get('/:id', [verifyToken, refreshCookie], userController.getUserById);
-router.patch('/:id', [verifyToken, refreshCookie], userController.updateUser);
-router.put('/:id', [verifyToken, refreshCookie], userController.updateUser);
-router.delete('/me', [verifyToken, refreshCookie], userController.deleteMyProfile);
-
+router.route('/me')
+    .get([verifyToken, refreshCookie], userController.getMyProfile)
+    .patch([verifyToken, refreshCookie], userController.updateMyProfile)
+    .put([verifyToken, refreshCookie], userController.updateMyProfile)
 
 module.exports = router;

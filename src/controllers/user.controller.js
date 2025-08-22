@@ -20,7 +20,6 @@ const getUserById = async (req, res) => {
     }
 };
 
-// Controller to update a user's own information (with security check)
 const updateUser = async (req, res) => {
     try {
         
@@ -47,24 +46,47 @@ const updateUser = async (req, res) => {
     }
 };
 
-const deleteMyProfile = async (req, res) => {
-    try {
 
+const getMyProfile = async (req, res) => {
+    try {
         
-        if (req.user.role === 'agent') {
-            return res.status(403).json({ message: "Forbidden: Agents are not allowed to delete their own profile." });
+        const userIdFromToken = req.user.id;
+
+        const user = await userService.getUserById(userIdFromToken);
+
+        if (!user) {
+            return res.status(404).json({ message: "User associated with token not found." });
+        }
+        
+        res.status(200).json(user);
+
+    } catch (error) {
+        res.status(500).json({ message: "Server Error: " + error.message });
+    }
+};
+
+const updateMyProfile = async (req, res) => {
+    try {
+        const userIdFromToken = req.user.id; 
+
+        if (req.user.role !== 'admin' && req.body.role) {
+            delete req.body.role;
         }
 
-        await userService.deleteMyProfile(req.user.id);
-        res.status(200).json({ message: "Your profile was deleted successfully." });
-
+        const updatedUser = await userService.updateUser(userIdFromToken, req.body);
+        res.status(200).json({ 
+            message: "Your profile was updated successfully", 
+            user: updatedUser 
+        });
     } catch (error) {
         res.status(500).json({ message: "Server error: " + error.message });
     }
 };
 
+
 module.exports = {
     getUserById,
     updateUser,
-    deleteMyProfile 
+    getMyProfile,
+    updateMyProfile
 };

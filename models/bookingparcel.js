@@ -3,13 +3,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class BookingParcel extends Model {
     static associate(models) {
-      // Ek Parcel kisi ek User (customer) ka hota hai
       BookingParcel.belongsTo(models.User, {
         foreignKey: 'customerId',
         as: 'Customer'
       });
 
-      // Ek Parcel kisi ek User (agent) ko assign hota hai
       BookingParcel.belongsTo(models.User, {
         foreignKey: 'agentId',
         as: 'Agent'

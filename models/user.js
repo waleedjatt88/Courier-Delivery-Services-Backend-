@@ -4,19 +4,13 @@ const {
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
+    
     static associate(models) {
-      // Ek User ke paas (customer ke taur par) kayi BookingParcels ho sakte hain
       User.hasMany(models.BookingParcel, {
         foreignKey: 'customerId',
         as: 'CustomerParcels'
       });
 
-      // Ek User ke paas (agent ke taur par) kayi BookingParcels ho sakte hain
       User.hasMany(models.BookingParcel, {
         foreignKey: 'agentId',
         as: 'AgentTasks'
@@ -25,7 +19,6 @@ module.exports = (sequelize, DataTypes) => {
     
   }
   User.init({
-    // --- ATTRIBUTES OBJECT YAHAN SHURU HOTA HAI ---
     fullName: {
       type: DataTypes.STRING,
       allowNull: false
@@ -53,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    // --- OTP WALE COLUMNS BHI ISI OBJECT MEIN AAYENGE ---
+    
     otp: {
       type: DataTypes.STRING,
       allowNull: true
@@ -74,10 +67,19 @@ module.exports = (sequelize, DataTypes) => {
   refreshToken: {
         type: DataTypes.STRING,
         allowNull: true
-      }
-    // --- ATTRIBUTES OBJECT YAHAN KHATAM HOTA HAI ---
+      },
 
-  }, { // <-- YEH OPTIONS OBJECT HAI
+       isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  suspendedUntil: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
+    
+
+  }, { 
     sequelize,
     modelName: 'User',
   });

@@ -93,11 +93,45 @@ const assignAgent = async (req, res) => {
     }
 };
 
+
+const blockUser = async (req, res) => {
+    try {
+        const user = await adminService.blockUser(req.params.id);
+        res.status(200).json({ message: `User ${user.fullName} has been blocked.`, user });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const unblockUser = async (req, res) => {
+    try {
+        const user = await adminService.unblockUser(req.params.id);
+        res.status(200).json({ message: `User ${user.fullName} has been unblocked.`, user });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const suspendUser = async (req, res) => {
+    try {
+        const { days } = req.body; 
+        const user = await adminService.suspendUser(req.params.id, days);
+        res.status(200).json({ message: `User ${user.fullName} has been suspended for ${days} days.`, user });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const unsuspendUser = async (req, res) => {
+    try {
+        const user = await adminService.unsuspendUser(req.params.id);
+        res.status(200).json({ message: `User ${user.fullName} has been unsuspended.`, user });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
 module.exports = {
     getAllUsers,
     deleteUser,
     getAllParcels,
     getParcelById,
     updateUser,
-    assignAgent 
+    assignAgent ,
+    blockUser,
+    unblockUser,
+    suspendUser,
+    unsuspendUser
 };

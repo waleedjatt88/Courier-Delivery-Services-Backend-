@@ -22,5 +22,12 @@ router.get('/parcels/:id', [verifyToken, isAdmin, refreshCookie], adminControlle
 router.patch('/parcels/:id/assign', [verifyToken, isAdmin, refreshCookie], adminController.assignAgent);
 
 
+router.patch('/users/:id/block', [verifyToken, isAdmin], adminController.blockUser);
+router.patch('/users/:id/unblock', [verifyToken, isAdmin], adminController.unblockUser);
+router.patch('/users/:id/suspend', [verifyToken, isAdmin], adminController.suspendUser);
+router.patch('/users/:id/unsuspend', [verifyToken, isAdmin], adminController.unsuspendUser);
+
+
+
 
 module.exports = router;

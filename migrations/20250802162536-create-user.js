@@ -20,12 +20,12 @@ module.exports = {
       },
       phoneNumber: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true 
       },
       passwordHash: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: true
       },
       role: { 
         type: Sequelize.ENUM('customer', 'admin', 'agent'),

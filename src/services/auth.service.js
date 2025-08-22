@@ -18,8 +18,13 @@ const register = async (userData, createdByAdmin = false) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
     let userRole = 'customer';
-    if (createdByAdmin && role && ['admin', 'agent', 'customer'].includes(role)) {
-        userRole = role;
+    if (createdByAdmin && role) {
+        if (role === 'admin') {
+            throw new Error('Admin cannot create another admin account');
+        }
+        if (['agent', 'customer'].includes(role)) {
+            userRole = role;
+        }
     }
 
      let otp = null;
@@ -79,6 +84,17 @@ const login = async (loginData) => {
     const user = await User.findOne({ where: { email } });
     if (!user) {
         throw new Error('Invalid credentials - User not found');
+
+    }
+
+     if (user.isActive === false) {
+        throw new Error('Your account has been blocked. Please contact support.');
+    }
+
+    if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+        
+        const suspensionEndDate = user.suspendedUntil.toLocaleString('en-PK', { timeZone: 'Asia/Karachi' });
+        throw new Error(`Your account is suspended. You can log in again after ${suspensionEndDate}.`);
     }
 
     if (!user.isVerified) {

@@ -1,4 +1,3 @@
-// models/index.js (Correct and Final Version)
 
 'use strict';
 
@@ -20,7 +19,6 @@ if (config.use_env_variable) {
 fs
   .readdirSync(__dirname)
   .filter(file => {
-    // Yeh filter saari .js files ko dhoondhta hai jo models hain
     return (
       file.indexOf('.') !== 0 &&
       file !== basename &&
@@ -29,13 +27,10 @@ fs
     );
   })
   .forEach(file => {
-    // Har file ko require karke model banata hai
     const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    // Aur usay db object mein daal deta hai (e.g., db['User'] = User model)
     db[model.name] = model;
   });
 
-// Associations (agar hain to) set karta hai
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);

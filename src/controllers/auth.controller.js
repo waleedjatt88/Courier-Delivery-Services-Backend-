@@ -1,6 +1,6 @@
 
-
 const authService = require('../services/auth.service.js');
+const jwt = require('jsonwebtoken');
 
 
 
@@ -126,4 +126,24 @@ exports.resendOtp = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Error resending OTP: " + error.message });
   }
+};
+
+exports.googleCallback = (req, res) => {
+    const user = req.user;
+
+    const token = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' } 
+    );
+    
+    res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 1000 
+    });
+
+    
+    res.redirect('http://localhost:5173/dashboard'); 
 };

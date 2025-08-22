@@ -1,4 +1,3 @@
-// src/controllers/agent.controller.js
 const parcelService = require('../services/parcel.service.js');
 
 const getMyAssignedParcels = async (req, res) => {
