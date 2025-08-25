@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container { font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #ddd; }
+        .header { padding: 20px; text-align: center; border-bottom: 2px solid #eee; background-color: #f8f8f8; }
+        .content { padding: 30px 20px; line-height: 1.6; text-align: left; }
+        .summary { background-color: #f9f9f9; border: 1px solid #eee; padding: 15px; margin-top: 20px; }
+        .footer { padding: 15px; font-size: 12px; color: #777; background-color: #f4f4f4; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{logoUrl}}" alt="DevGo Logo" style="width: 150px; height: auto;" />
+            <h2 style="margin-top: 10px;">Your Parcel is Booked!</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{customerName}},</p>
+
+            <p>Thank you for booking with DevGo! Your parcel is confirmed and will be picked up soon.</p>
+
+            <div class="summary">
+                <h3 style="margin-top: 0;">Booking Summary</h3>
+                <p><strong>Tracking Number:</strong> {{trackingNumber}}</p>
+                <p><strong>Status:</strong> {{status}}</p>
+                <p><strong>Pickup From:</strong> {{pickupAddress}}</p>
+                <p><strong>Deliver To:</strong> {{deliveryAddress}}</p>
+                <p><strong>Total Charges:</strong> Rs. {{deliveryCharge}}</p>
+                <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+            </div>
+
+            <p style="margin-top: 20px;">You can track your parcel's live status on our website using the tracking number.</p>
+
+            <p>Thanks for choosing DevGo!<br>
+            <strong>The DevGo Team</strong></p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 DevGo. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

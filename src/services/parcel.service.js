@@ -3,9 +3,8 @@
 
 const db = require('../../models'); 
 const { v4: uuidv4 } = require('uuid');
-
+const axios = require('axios');
 const { BookingParcel, User } = db; 
-
 const sendEmail = require('./notification.service.js');
 
 
@@ -16,61 +15,64 @@ const sendEmail = require('./notification.service.js');
  * @returns {object} 
  */
 const createParcel = async (parcelData, customerId) => {
-     const uniquePart = uuidv4().split('-').pop().toUpperCase(); 
+    const uniquePart = uuidv4().split('-').pop().toUpperCase();
     const trackingNumber = `PK-${uniquePart}`;
-
-    const baseCharge = 150; 
-    const chargePerKg = 50; 
+    const baseCharge = 150;
+    const chargePerKg = 50;
     const deliveryCharge = baseCharge + ((parcelData.packageWeight - 1) * chargePerKg);
-     const { customerId: clientCustomerId, ...safeParcelData } = parcelData;
+    const { customerId: clientCustomerId, ...safeParcelData } = parcelData;
 
-    const newParcel = await BookingParcel.create({
-        ...safeParcelData, 
-        customerId: customerId, 
+    let newParcel = await BookingParcel.create({
+        ...safeParcelData,
+        customerId: customerId,
         trackingNumber: trackingNumber,
         deliveryCharge: deliveryCharge,
         status: 'pending',
         paymentStatus: 'pending'
     });
 
-   
     try {
-        const customer = await User.findByPk(customerId);
+        const pickupResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: newParcel.pickupAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
+        const deliveryResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: newParcel.deliveryAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
 
-        if (customer) {
+        if (pickupResponse.data.results.length > 0 && deliveryResponse.data.results.length > 0) {
+            const pickupCoords = pickupResponse.data.results[0].geometry.location;
+            const deliveryCoords = deliveryResponse.data.results[0].geometry.location;
+
+            newParcel.pickupLat = pickupCoords.lat;
+            newParcel.pickupLng = pickupCoords.lng;
+            newParcel.deliveryLat = deliveryCoords.lat;
+            newParcel.deliveryLng = deliveryCoords.lng;
             
-            const message = `
-Hello ${customer.fullName},
+            await newParcel.save();
+            await newParcel.reload(); 
+        }
+    } catch (geoError) {
+        console.error("!!! Error during Geocoding API call:", geoError.message);
+    }
 
-Thank you for booking with DevGo! Your parcel is confirmed and will be picked up soon.
-
-**Booking Summary:**
-
-- **Tracking Number:** ${newParcel.trackingNumber}
-- **Status:** ${newParcel.status}
-
-- **Pickup From:** ${newParcel.pickupAddress}
-- **Deliver To:** ${newParcel.deliveryAddress}
-
-- **Total Charges:** Rs. ${newParcel.deliveryCharge}
-- **Payment Method:** ${newParcel.paymentMethod}
-
-You can track your parcel's live status on our website using the tracking number.
-
-Thanks for choosing DevGo!
-            `;
-
+     try {
+        const customer = await User.findByPk(customerId);
+        if (customer) {
             await sendEmail({
                 email: customer.email,
                 subject: `Parcel Booked! Your Tracking ID: ${newParcel.trackingNumber}`,
-                message: message
+                template: 'parcelBooked', 
+                data: { 
+                    customerName: customer.fullName,
+                    trackingNumber: newParcel.trackingNumber,
+                    status: newParcel.status,
+                    pickupAddress: newParcel.pickupAddress,
+                    deliveryAddress: newParcel.deliveryAddress,
+                    deliveryCharge: newParcel.deliveryCharge,
+                    paymentMethod: newParcel.paymentMethod
+                }
             });
             console.log(`Booking confirmation email sent to: ${customer.email}`);
         }
     } catch (error) {
         console.error(`!!! Could not send booking confirmation email:`, error);
     }
-   
 
     return newParcel;
 };

@@ -46,25 +46,15 @@ const register = async (userData, createdByAdmin = false) => {
     
     if (!createdByAdmin) {
         try {
-            
-            const message = `
-Hello ${user.fullName},
-
-Welcome to DevGo Courier Service!
-
-To complete your registration, please use the following One-Time Password (OTP):
-
-Your OTP is: ${otp}
-
-This code is valid for the next 1 minute.
-
-Please enter this OTP in the app to verify your email address.
-
-Thank you for choosing us!
-DevGo Courier Service Team.
-
-`;
-            await sendEmail({ email: user.email, subject: 'Verify Your Email', message });
+            await sendEmail({
+                email: user.email,
+                subject: 'Verify Your Email for DevGo',
+                template: 'emailVerification', 
+                data: { 
+                    fullName: user.fullName,
+                    otp: otp
+                }
+            });
             console.log(`OTP email sent to: ${user.email}`);
         } catch (error) {
             console.error(`!!! Could not send OTP email to ${user.email}:`, error);
@@ -154,25 +144,17 @@ const forgotPassword = async (email) => {
     await user.save();
 
     try {
-        
-        const message = `
-Hello,
-
-We received a request to reset the password for your account.
-
-Please use the following One-Time Password (OTP) to proceed:
-
-Your OTP is: ${otp}
-
-This OTP is valid for 1 minute.
-
-Thank you for choosing us!
-DevGo Courier Service Team.
-`;
-        await sendEmail({ email: user.email, subject: 'Courier App - Password Reset OTP', message });
-    } catch (error) {
-        throw new Error('Email could not be sent. Please try again later.');
-    }
+    await sendEmail({
+        email: user.email,
+        subject: 'Your DevGo Password Reset OTP',
+        template: 'forgotPassword', 
+        data: { 
+            otp: otp
+        }
+    });
+} catch (error) {
+    throw new Error('Email could not be sent. Please try again later.');
+}
     
     return { message: 'An OTP has been sent to your email address.' };
 };
@@ -238,17 +220,19 @@ const resendOtp = async (email) => {
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
-
-    try {
-        const message = `You requested a new OTP. Your new One-Time Password is: ${otp}\nThis OTP is valid for 1 minute.`;
-        await sendEmail({
-            email: user.email,
-            subject: 'Your New OTP Code',
-            message: message
-        });
-    } catch (error) {
-        throw new Error('Email could not be sent. Please try again.');
-    }
+try {
+    await sendEmail({
+        email: user.email,
+        subject: 'Your New DevGo OTP',
+        template: 'resendOtp', 
+        data: { 
+            fullName: user.fullName,
+            otp: otp
+        }
+    });
+} catch (error) {
+    throw new Error('Email could not be sent. Please try again.');
+}
     
     return { message: 'A new OTP has been sent to your email address.' };
 };

@@ -76,7 +76,18 @@ module.exports = (sequelize, DataTypes) => {
   suspendedUntil: {
     type: DataTypes.DATE,
     allowNull: true
-  }
+  },
+
+  profilePicture: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null
+  },
+address: {
+  type: DataTypes.TEXT,
+  allowNull: true,
+  defaultValue: null
+}
     
 
   }, { 
