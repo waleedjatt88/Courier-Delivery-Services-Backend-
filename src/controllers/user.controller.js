@@ -87,82 +87,30 @@ const updateMyProfile = async (req, res) => {
 };
 
 const uploadProfilePicture = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const userId = req.user.id;
-    const user = await userService.getUserById(userId);
-
-    if (user.profilePicture) {
-      const oldPath = path.join(__dirname, "../uploads", user.profilePicture);
-      try {
-        await fs.unlink(oldPath);
-      } catch (err) {
-        console.error("Error deleting old profile picture:", err);
-      }
-    }
-
-    const relativePath = path.join("profile-pictures", req.file.filename);
-    const updatedUser = await userService.updateUser(userId, {
-      profilePicture: relativePath,
-    });
-
-    res.status(200).json({
-      message: "Profile picture uploaded successfully",
-      profilePictureUrl: `/api/uploads/${relativePath}`,
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to upload profile picture: " + error.message });
-  }
-};
-
-const deleteProfilePicture = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const user = await userService.getUserById(userId);
-
-    if (!user.profilePicture) {
-      return res.status(404).json({ message: "No profile picture found" });
-    }
-
-    const filePath = path.join(__dirname, "../uploads", user.profilePicture);
     try {
-      await fs.unlink(filePath);
-    } catch (err) {
-      console.error("Error deleting profile picture:", err);
+        const media = await userService.uploadProfilePicture(req.file, req.user.id);
+        res.status(200).json({ message: "Profile picture uploaded successfully.", data: media });
+    } catch (error) {
+        res.status(400).json({ message: "File upload failed.", error: error.message });
     }
-
-    await userService.updateUser(userId, { profilePicture: null });
-
-    res.status(200).json({ message: "Profile picture deleted successfully" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to delete profile picture: " + error.message });
-  }
 };
 
 const getProfilePicture = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const user = await userService.getUserById(userId);
-
-    if (!user.profilePicture) {
-      return res.status(404).json({ message: "No profile picture found" });
+    try {
+        const media = await userService.getProfilePicture(req.user.id);
+        res.status(200).json({ data: media });
+    } catch (error) {
+        res.status(404).json({ message: error.message });
     }
+};
 
-    res.status(200).json({
-      profilePictureUrl: `/api/uploads/${user.profilePicture}`,
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to get profile picture: " + error.message });
-  }
+const deleteProfilePicture = async (req, res) => {
+    try {
+        const result = await userService.deleteProfilePicture(req.user.id);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 };
 
 module.exports = {
@@ -171,6 +119,6 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
   uploadProfilePicture,
-  deleteProfilePicture,
-  getProfilePicture,
+    getProfilePicture,
+    deleteProfilePicture
 };

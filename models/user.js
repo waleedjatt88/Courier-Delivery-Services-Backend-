@@ -1,10 +1,8 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
-    
     static associate(models) {
       User.hasMany(models.BookingParcel, {
         foreignKey: 'customerId',
@@ -15,8 +13,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'agentId',
         as: 'AgentTasks'
       });
+
+      User.hasMany(models.Media, {
+        foreignKey: 'relatedId',
+        constraints: false, 
+        scope: {
+          relatedType: 'user' 
+        },
+        as: 'ProfilePictures' 
+      });
     }
-    
   }
   User.init({
     fullName: {
@@ -78,11 +84,6 @@ module.exports = (sequelize, DataTypes) => {
     allowNull: true
   },
 
-  profilePicture: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: null
-  },
 address: {
   type: DataTypes.TEXT,
   allowNull: true,

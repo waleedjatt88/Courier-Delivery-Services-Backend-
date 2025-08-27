@@ -4,6 +4,7 @@ dotenv.config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const path = require('path');
 
 const authRoutes = require("./routes/auth.routes.js");
 const userRoutes = require("./routes/user.routes.js");
@@ -17,6 +18,7 @@ require("./config/passport-setup.js");
 const paymentController = require("./controllers/payment.controller.js");
 
 const app = express();
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
 const corsOptions = {
@@ -57,6 +59,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is listening on http://localhost:${PORT}`);
 
-  console.log(`Accessible on your network at: http://192.168.100.244:${PORT}`);
+  console.log(`Accessible on your network at: http://192.168.100.120:${PORT}`);
   // console.log(`Accessible on your network at: http://192.168.0.105:${PORT}`);
 });

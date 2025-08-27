@@ -4,8 +4,10 @@
 const db = require('../../models'); 
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
-const { BookingParcel, User } = db; 
+const { BookingParcel, User, Media } = db;
 const sendEmail = require('./notification.service.js');
+const invoiceService = require('./invoice.service.js'); 
+
 
 
 /**
@@ -54,11 +56,21 @@ const createParcel = async (parcelData, customerId) => {
      try {
         const customer = await User.findByPk(customerId);
         if (customer) {
+            const invoiceUrl = invoiceService.generateInvoice(newParcel, customer);
+
+            await Media.create({
+                url: invoiceUrl,
+                mediaType: 'PARCEL_INVOICE',
+                relatedId: newParcel.id,
+                relatedType: 'parcel'
+            });
+            console.log(`Invoice generated and saved for parcel ${newParcel.id}`);
+
             await sendEmail({
                 email: customer.email,
                 subject: `Parcel Booked! Your Tracking ID: ${newParcel.trackingNumber}`,
-                template: 'parcelBooked', 
-                data: { 
+                template: 'parcelBooked',
+                data: {
                     customerName: customer.fullName,
                     trackingNumber: newParcel.trackingNumber,
                     status: newParcel.status,
@@ -71,7 +83,7 @@ const createParcel = async (parcelData, customerId) => {
             console.log(`Booking confirmation email sent to: ${customer.email}`);
         }
     } catch (error) {
-        console.error(`!!! Could not send booking confirmation email:`, error);
+        console.error("!!! Error during Invoice/Email generation:", error);
     }
 
     return newParcel;

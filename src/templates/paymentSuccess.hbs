@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container { font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #ddd; }
+        .header { padding: 20px; text-align: center; border-bottom: 2px solid #eee; background-color: #28a745; color: white; }
+        .content { padding: 30px 20px; line-height: 1.6; text-align: left; }
+        .receipt { background-color: #f9f9f9; border: 1px solid #eee; padding: 15px; margin-top: 20px; }
+        .footer { padding: 15px; font-size: 12px; color: #777; background-color: #f4f4f4; text-align: center; }
+        .total { font-weight: bold; font-size: 1.2em; color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{logoUrl}}" alt="DevGo Logo" style="width: 150px; height: auto;" />
+            <h2 style="margin-top: 10px;">Payment Successful!</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{customerName}},</p>
+
+            <p>We're happy to let you know that we've received your payment. Your parcel is now being processed for pickup.</p>
+
+            <div class="receipt">
+                <h3 style="margin-top: 0;">Payment Receipt</h3>
+                <p><strong>Tracking Number:</strong> {{trackingNumber}}</p>
+                <p><strong>Payment Method:</strong> Credit/Debit Card (via Stripe)</p>
+                <p><strong>Date:</strong> {{paymentDate}}</p>
+                <hr>
+                <p><strong>Total Amount Paid:</strong> <span class="total">Rs. {{amountPaid}}</span></p>
+            </div>
+
+            <p style="margin-top: 20px;">You can view your booking details anytime on your dashboard.</p>
+
+            <p>Thanks for choosing DevGo!<br>
+            <strong>The DevGo Team</strong></p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 DevGo. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

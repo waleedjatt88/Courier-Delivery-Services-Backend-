@@ -23,7 +23,7 @@ const sendEmail = async (options) => {
     
   
     const finalHtml = compiledTemplate({
-        logoUrl: 'https://i.ibb.co/sJCvwQGT/Delivery-Rider-Logo-for-Dev-Go-removebg-preview.png', 
+        logoUrl: 'https://i.ibb.co/wrZ3VgdX/Delivery-Rider-Logo-for-Dev-Go.png', 
         ...options.data
     });
 

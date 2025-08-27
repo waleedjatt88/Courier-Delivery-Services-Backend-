@@ -12,6 +12,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "agentId",
         as: "Agent",
       });
+
+       BookingParcel.hasMany(models.Media, {
+        foreignKey: 'relatedId',
+        constraints: false,
+        scope: {
+          relatedType: 'parcel' 
+        },
+        as: 'ParcelFiles' 
+      });
     }
   }
   BookingParcel.init(

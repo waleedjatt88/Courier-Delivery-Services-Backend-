@@ -1,10 +1,12 @@
-// src/services/payment.service.js
 
 console.log("Checking for Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
 
 
+
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../../models');
+const sendEmail = require('./notification.service.js');
+
 
 /**
  * Creates a Stripe Checkout Session for a parcel booking.
@@ -21,6 +23,24 @@ const createCheckoutSession = async (parcelId, customerId) => {
     if (parcel.paymentStatus === 'completed') {
         throw new Error('This parcel has already been paid for.');
     }
+     try {
+            const customer = await db.User.findByPk(customerId);
+            if (customer) {
+                await sendEmail({
+                    email: customer.email,
+                    subject: `Payment Received! Your order #${parcel.trackingNumber} is confirmed.`,
+                    template: 'paymentSuccess',
+                    data: {
+                        customerName: customer.fullName,
+                        trackingNumber: parcel.trackingNumber,
+                        paymentDate: new Date().toLocaleDateString('en-GB'),
+                        amountPaid: parcel.deliveryCharge
+                    }
+                });
+            }
+        } catch (emailError) {
+            console.error("!!! Could not send payment success email:", emailError);
+        }
 
     const line_items = [{
         price_data: {
