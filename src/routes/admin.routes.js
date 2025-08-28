@@ -27,6 +27,11 @@ router.patch('/users/:id/unblock', [verifyToken, isAdmin], adminController.unblo
 router.patch('/users/:id/suspend', [verifyToken, isAdmin], adminController.suspendUser);
 router.patch('/users/:id/unsuspend', [verifyToken, isAdmin], adminController.unsuspendUser);
 
+router.get('/tickets', [verifyToken, isAdmin, refreshCookie], adminController.getAllTickets);
+router.route('/tickets/:id')
+    .get([verifyToken, isAdmin, refreshCookie], adminController.getTicketById)
+    .patch([verifyToken, isAdmin, refreshCookie], adminController.updateTicketStatus);
+
 
 
 

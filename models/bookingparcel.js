@@ -21,6 +21,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         as: 'ParcelFiles' 
       });
+      BookingParcel.hasMany(models.Ticket,
+         { foreignKey: 'parcelId' });
+
     }
   }
   BookingParcel.init(

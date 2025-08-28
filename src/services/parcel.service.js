@@ -11,7 +11,7 @@ const invoiceService = require('./invoice.service.js');
 
 
 /**
- * Creates a new parcel booking and sends a confirmation email.
+ * 
  * @param {object} parcelData 
  * @param {number} customerId 
  * @returns {object} 
@@ -90,7 +90,7 @@ const createParcel = async (parcelData, customerId) => {
 };
 
 /**
- * Retrieves all parcels for a specific customer.
+ * 
  * @param {number} customerId 
  * @returns {Array} 
  */
@@ -105,7 +105,7 @@ const getMyParcels = async (customerId) => {
 };
 
 /**
- * Retrieves ALL parcels from the database. (Admin only)
+ * 
  * @returns {Array} 
  */
 const getAllParcels = async () => {
@@ -121,7 +121,7 @@ const getAllParcels = async () => {
 };
 
 /**
- * Retrieves a single parcel by its ID. (For Admin and Customer)
+ * 
  * @param {number} parcelId 
  * @returns {object} 
  */
@@ -145,7 +145,7 @@ const getParcelById = async (parcelId) => {
 };
 
 /**
- * Assigns a delivery agent to a specific parcel. (Admin only)
+ * 
  * @param {number} parcelId 
  * @param {number} agentId 
  * @returns {object} 
@@ -178,7 +178,7 @@ const assignAgentToParcel = async (parcelId, agentId) => {
 };
 
 /**
- * Retrieves all parcels assigned to a specific agent.
+ * 
  * @param {number} agentId 
  * @returns {Array} 
  */
@@ -197,11 +197,28 @@ const getParcelsByAgentId = async (agentId) => {
     return parcels;
 };
 
+const getParcelFiles = async (parcelId, customerId) => {
+    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, customerId: customerId } });
+    if (!parcel) {
+        throw new Error("Parcel not found or you are not authorized.");
+    }
+
+    const files = await db.Media.findAll({
+        where: {
+            relatedId: parcelId,
+            relatedType: 'parcel'
+        }
+    });
+
+    return files;
+};
+
 module.exports = {
     createParcel,
     getMyParcels,
     getAllParcels,
     getParcelById,
     assignAgentToParcel,
-    getParcelsByAgentId 
+    getParcelsByAgentId ,
+    getParcelFiles
 };

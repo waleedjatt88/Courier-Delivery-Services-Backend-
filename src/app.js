@@ -12,9 +12,10 @@ const adminRoutes = require("./routes/admin.routes.js");
 const agentRoutes = require("./routes/agent.routes.js");
 const parcelRoutes = require("./routes/parcel.routes.js");
 const paymentRoutes = require("./routes/payment.routes.js");
+const ticketRoutes = require('./routes/ticket.routes.js'); 
 const passport = require("passport");
-require("./config/passport-setup.js");
 
+require("./config/passport-setup.js");
 const paymentController = require("./controllers/payment.controller.js");
 
 const app = express();
@@ -49,6 +50,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/parcels", parcelRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Courier Backend API is running!" });
@@ -60,5 +62,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is listening on http://localhost:${PORT}`);
 
   console.log(`Accessible on your network at: http://192.168.100.120:${PORT}`);
-  // console.log(`Accessible on your network at: http://192.168.0.105:${PORT}`);
+  // console.log(`Accessible on your network at: http://192.168.0.103:${PORT}`);
 });

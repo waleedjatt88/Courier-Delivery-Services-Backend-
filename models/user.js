@@ -22,6 +22,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         as: 'ProfilePictures' 
       });
+
+      User.hasMany(models.Ticket, { foreignKey: 'customerId' });
+
     }
   }
   User.init({

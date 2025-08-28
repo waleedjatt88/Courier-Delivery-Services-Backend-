@@ -48,7 +48,20 @@ const getMyParcels = async (req, res) => {
   }
 };
 
+const getParcelFiles = async (req, res) => {
+    try {
+        const customerId = req.user.id;
+        const parcelId = req.params.id;
+        const files = await parcelService.getParcelFiles(parcelId, customerId);
+        res.status(200).json({ files: files });
+    } catch (error) {
+      
+    }
+};
+
+
 module.exports = {
   createParcel,
   getMyParcels, 
+  getParcelFiles
 };

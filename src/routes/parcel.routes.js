@@ -7,5 +7,8 @@ const { verifyToken, refreshCookie } = require('../middleware/auth.middleware.js
 router.post('/', [verifyToken, refreshCookie], parcelController.createParcel);
 router.get('/my', [verifyToken, refreshCookie], parcelController.getMyParcels);
 
+router.get('/:id/files', [verifyToken, refreshCookie], parcelController.getParcelFiles);
+
+
 
 module.exports = router;

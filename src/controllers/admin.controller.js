@@ -1,6 +1,8 @@
 
 const adminService = require('../services/admin.service.js');
 const parcelService = require('../services/parcel.service.js');
+const ticketService = require('../services/ticket.service.js'); 
+
 
 
 const getAllUsers = async (req, res) => {
@@ -123,6 +125,34 @@ const unsuspendUser = async (req, res) => {
     } catch (error) { res.status(400).json({ message: error.message }); }
 };
 
+const getAllTickets = async (req, res) => {
+    try {
+        const tickets = await ticketService.getAllTickets();
+        res.status(200).json({ tickets });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch tickets." });
+    }
+};
+
+const getTicketById = async (req, res) => {
+    try {
+        const ticket = await ticketService.getTicketById(req.params.id);
+        res.status(200).json({ ticket });
+    } catch (error) {
+        res.status(404).json({ message: error.message });
+    }
+};
+
+const updateTicketStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const ticket = await ticketService.updateTicketStatus(req.params.id, status);
+        res.status(200).json({ message: "Ticket status updated.", ticket });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getAllUsers,
     deleteUser,
@@ -133,5 +163,9 @@ module.exports = {
     blockUser,
     unblockUser,
     suspendUser,
-    unsuspendUser
+    unsuspendUser,
+    getAllTickets,
+    getTicketById,
+    updateTicketStatus
+
 };
