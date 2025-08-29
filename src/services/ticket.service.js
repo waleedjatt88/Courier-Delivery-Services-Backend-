@@ -46,7 +46,7 @@ const getAllTickets = async () => {
 
 const getTicketById = async (ticketId) => {
     const ticket = await db.Ticket.findByPk(ticketId, {
-        // Poori details include karo
+        
         include: [
             { model: db.User, attributes: ['id', 'fullName', 'email'] },
             { model: db.BookingParcel, attributes: ['id', 'trackingNumber'] }

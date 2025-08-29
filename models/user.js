@@ -23,7 +23,16 @@ module.exports = (sequelize, DataTypes) => {
         as: 'ProfilePictures' 
       });
 
-      User.hasMany(models.Ticket, { foreignKey: 'customerId' });
+      User.hasMany(models.Ticket, { foreignKey: 'customerId'
+
+       });
+
+      User.hasMany(models.Chat, { foreignKey: 'customerId', as: 'CustomerChats' 
+
+      });
+      User.hasMany(models.Chat, { foreignKey: 'adminId', as: 'AdminChats' 
+        
+      });
 
     }
   }

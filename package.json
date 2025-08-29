@@ -29,6 +29,7 @@
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.17.1",
     "sequelize": "^6.37.3",
+    "socket.io": "^4.8.1",
     "stripe": "^18.4.0",
     "uuid": "^11.1.0"
   },
