@@ -1,23 +1,23 @@
 {
   "development": {
-    "username": "root",
-    "password": "WaleedIftikhar88",
-    "database": "courier_db",
-    "host": "localhost",
+    "username": { "ENV": "DB_USER" },
+    "password": { "ENV": "DB_PASSWORD" },
+    "database": { "ENV": "DB_NAME" },
+    "host": { "ENV": "DB_HOST" },
     "dialect": "mysql"
   },
   "test": {
-    "username": "root",
-    "password": "WaleedIftikhar88",
-    "database": "courier_db",
-    "host": "localhost",
+    "username": { "ENV": "DB_USER" },
+    "password": { "ENV": "DB_PASSWORD" },
+    "database": { "ENV": "DB_NAME" },
+    "host": { "ENV": "DB_HOST" },
     "dialect": "mysql"
   },
   "production": {
-    "username": "root",
-    "password": "WaleedIftikhar88",
-    "database": "courier_db",
-    "host": "localhost",
+    "username": { "ENV": "DB_USER" },
+    "password": { "ENV": "DB_PASSWORD" },
+    "database": { "ENV": "DB_NAME" },
+    "host": { "ENV": "DB_HOST" },
     "dialect": "mysql"
   }
 }
