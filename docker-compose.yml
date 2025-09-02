@@ -1,10 +1,9 @@
-
 version: '3.8'
 
 services:
   app:
     build: .
-    restart: always 
+    restart: on-failure
     env_file:
       - .env
     ports:
@@ -13,19 +12,39 @@ services:
       db:
         condition: service_healthy
 
+  
   db:
-    image: mysql:8.0
+    image: postgres:17
+    container_name: postgres_db 
     restart: always
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    volumes:
-      - mysql-data:/var/lib/mysql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80" 
+    depends_on:
+      db:
+        condition: service_healthy
+  redis:
+    image: redis:7-alpine 
+    restart: always
+    container_name: redis_cache
 
 volumes:
-  mysql-data:
+  postgres-data:

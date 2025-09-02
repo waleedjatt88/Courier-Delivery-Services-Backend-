@@ -9,6 +9,8 @@ const cookieParser = require("cookie-parser");
 const path = require("path");
 const http = require('http');
 const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
+const redisClient = require("./config/redis-client.js"); 
 const passport = require("passport");
 
 //(Routes, Controllers)
@@ -47,6 +49,13 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
+
+const pubClient = redisClient;
+const subClient = pubClient.duplicate();
+
+io.adapter(createAdapter(pubClient, subClient));
+console.log("Socket.IO adapter is set to Redis.");
+
 
 initializeSocket(io);
 app.set('socketio', io);
