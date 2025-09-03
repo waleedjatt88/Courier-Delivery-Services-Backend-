@@ -40,20 +40,24 @@ module.exports = (sequelize, DataTypes) => {
       specialInstructions: DataTypes.TEXT,
       deliveryCharge: DataTypes.FLOAT,
       status: DataTypes.ENUM(
-        "pending",
-        "in_transit",
-        "scheduled",
-        "out_for_delivery",
-        "delivered",
-        "cancelled"
-      ),
+      'order_placed', 
+      'scheduled', 
+      'picked_up', 
+      'in_transit', 
+      'out_for_delivery', 
+      'delivered', 
+      'cancelled'
+    ),
       paymentMethod: DataTypes.ENUM("COD", "JAZZCASH", "STRIPE"),
       paymentStatus: DataTypes.STRING,
       pickupLat: DataTypes.FLOAT,
       pickupLng: DataTypes.FLOAT,
       deliveryLat: DataTypes.FLOAT,
       deliveryLng: DataTypes.FLOAT,
+      deliveryType: DataTypes.ENUM('scheduled', 'instant')
+
     },
+
     {
       sequelize,
       modelName: "BookingParcel",
