@@ -8,14 +8,17 @@ services:
       - .env
     ports:
       - "3000:3000"
+    volumes:
+      - ./public:/app/public
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy 
 
-  
   db:
     image: postgres:17
-    container_name: postgres_db 
+    container_name: postgres_db
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -29,6 +32,16 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -37,14 +50,9 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
-      - "5050:80" 
+      - "5050:80"
     depends_on:
-      db:
-        condition: service_healthy
-  redis:
-    image: redis:7-alpine 
-    restart: always
-    container_name: redis_cache
+      - db
 
 volumes:
   postgres-data:

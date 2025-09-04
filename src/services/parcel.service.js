@@ -17,19 +17,50 @@ const invoiceService = require('./invoice.service.js');
  * @returns {object} 
  */
 const createParcel = async (parcelData, customerId) => {
+    const { 
+        pickupAddress, deliveryAddress, packageWeight, packageSize,
+        packageContent, pickupSlot,specialInstructions, paymentMethod, 
+        deliveryType, zoneId 
+    } = parcelData;
+
+    if (!zoneId || !deliveryType) {
+        throw new Error("Zone and Delivery Type are required.");
+    }
+    if (deliveryType === 'scheduled' && !pickupSlot) {
+        throw new Error("Pickup Slot is required for scheduled delivery.");
+    }
+
+
+    const pricingRule = await db.Pricing.findOne({ where: { zoneId: zoneId } });
+    if (!pricingRule) {
+        throw new Error("Pricing for the selected zone is not available. Please contact support.");
+    }
+
+    let totalCharge = pricingRule.baseFare; 
+
+
+    const weightThreshold = 5; 
+    if (packageWeight > weightThreshold) {
+        const extraWeight = packageWeight - weightThreshold;
+        totalCharge += extraWeight * pricingRule.perKgCharge;
+    }
+
+    if (deliveryType === 'instant') {
+        const expressFee = totalCharge * (pricingRule.expressChargePercent / 100);
+        totalCharge += expressFee;
+    }
+
+
     const uniquePart = uuidv4().split('-').pop().toUpperCase();
     const trackingNumber = `PK-${uniquePart}`;
-    const baseCharge = 150;
-    const chargePerKg = 50;
-    const deliveryCharge = baseCharge + ((parcelData.packageWeight - 1) * chargePerKg);
-    const { customerId: clientCustomerId, ...safeParcelData } = parcelData;
 
     let newParcel = await BookingParcel.create({
-        ...safeParcelData,
+        pickupAddress, deliveryAddress, packageWeight, packageSize,
+        packageContent, pickupSlot,specialInstructions, paymentMethod, deliveryType,
         customerId: customerId,
         trackingNumber: trackingNumber,
-        deliveryCharge: deliveryCharge,
-        status: 'pending',
+        deliveryCharge: Math.round(totalCharge), 
+        status: 'order_placed', 
         paymentStatus: 'pending'
     });
 
@@ -213,6 +244,67 @@ const getParcelFiles = async (parcelId, customerId) => {
     return files;
 };
 
+const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
+    const parcel = await db.BookingParcel.findByPk(parcelId);
+    if (!parcel) {
+        throw new Error("Parcel not found.");
+    }
+    if (parcel.agentId !== agentId) {
+        throw new Error("Forbidden: You are not authorized to update this parcel.");
+    }
+    const agentAllowedStatuses = ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'];
+    if (!agentAllowedStatuses.includes(newStatus)) {
+        throw new Error(`Invalid status update. Agents can only set status to: ${agentAllowedStatuses.join(', ')}.`);
+    }
+
+    parcel.status = newStatus;
+    await parcel.save();
+    return parcel;
+};
+
+/**
+ * 
+ * @param {number} parcelId 
+ * @returns {object} 
+ */
+const cancelParcelByAdmin = async (parcelId) => {
+    const parcel = await db.BookingParcel.findByPk(parcelId);
+    if (!parcel) {
+        throw new Error("Parcel not found.");
+    }
+
+    if (parcel.status === 'delivered') {
+        throw new Error("Cannot cancel a parcel that has already been delivered.");
+    }
+
+    parcel.status = 'cancelled';
+    await parcel.save();
+
+
+    return parcel;
+};
+
+/**
+ * 
+ * @param {number} parcelId 
+ * @returns {object} 
+ */
+const rescheduleParcelByAdmin = async (parcelId) => {
+    const parcel = await db.BookingParcel.findByPk(parcelId);
+    if (!parcel) {
+        throw new Error("Parcel not found.");
+    }
+
+    if (parcel.status !== 'cancelled') {
+        throw new Error(`Only cancelled parcels can be rescheduled. This parcel's status is '${parcel.status}'.`);
+    }
+    parcel.status = 'order_placed';  
+    parcel.agentId = null; 
+    await parcel.save();
+    return parcel;
+};
+
+
 module.exports = {
     createParcel,
     getMyParcels,
@@ -220,5 +312,8 @@ module.exports = {
     getParcelById,
     assignAgentToParcel,
     getParcelsByAgentId ,
-    getParcelFiles
+    updateParcelStatusByAgent,
+    getParcelFiles,
+    cancelParcelByAdmin,
+    rescheduleParcelByAdmin
 };

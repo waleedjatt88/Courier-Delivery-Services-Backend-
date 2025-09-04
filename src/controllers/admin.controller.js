@@ -2,6 +2,8 @@
 const adminService = require('../services/admin.service.js');
 const parcelService = require('../services/parcel.service.js');
 const ticketService = require('../services/ticket.service.js'); 
+const pricingService = require('../services/pricing.service.js'); 
+
 
 
 
@@ -153,6 +155,66 @@ const updateTicketStatus = async (req, res) => {
     }
 };
 
+const getPricingRules = async (req, res) => {
+    try {
+        const rules = await pricingService.getAllPricingRules();
+        res.status(200).json({ pricingRules: rules });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch pricing rules." });
+    }
+};
+
+const updatePricingRule = async (req, res) => {
+    try {
+        const ruleId = req.params.id; 
+        const updateData = req.body; 
+        const updatedRule = await pricingService.updatePricingRule(ruleId, updateData);
+        res.status(200).json({ message: "Pricing rule updated successfully.", rule: updatedRule });
+    } catch (error) {
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(400).json({ message: "Update failed: " + error.message });
+    }
+};
+
+const cancelParcel = async (req, res) => {
+    try {
+        const parcelId = req.params.id;
+        const updatedParcel = await parcelService.cancelParcelByAdmin(parcelId);
+
+        res.status(200).json({
+            message: `Parcel ${updatedParcel.trackingNumber} has been cancelled.`,
+            parcel: updatedParcel
+        });
+
+    } catch (error) {
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(400).json({ message: "Cancellation failed: " + error.message });
+    }
+};
+
+const rescheduleParcel = async (req, res) => {
+    try {
+        const parcelId = req.params.id;
+        const updatedParcel = await parcelService.rescheduleParcelByAdmin(parcelId);
+
+        res.status(200).json({
+            message: `Parcel ${updatedParcel.trackingNumber} has been rescheduled. Please assign an agent.`,
+            parcel: updatedParcel
+        });
+
+    } catch (error) {
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(400).json({ message: "RescheduleParcel failed: " + error.message });
+    }
+};
+
+
 module.exports = {
     getAllUsers,
     deleteUser,
@@ -166,6 +228,10 @@ module.exports = {
     unsuspendUser,
     getAllTickets,
     getTicketById,
-    updateTicketStatus
+    updateTicketStatus,
+    getPricingRules,
+    updatePricingRule,
+    cancelParcel,
+    rescheduleParcel
 
 };
