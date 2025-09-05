@@ -2,7 +2,7 @@
 const parcelService = require("../services/parcel.service.js");
 
 
-const createParcel = async (req, res) => {
+const prepareCheckout = async (req, res) => {
   try {
     const parcelData = req.body;
 
@@ -34,6 +34,27 @@ const createParcel = async (req, res) => {
   }
 };
 
+const confirmCodBooking = async (req, res) => {
+    try {
+        const customerId = req.user.id; 
+        const parcelId = req.params.id; 
+
+        const confirmedParcel = await parcelService.confirmCodBooking(parcelId, customerId);
+
+        res.status(200).json({ 
+            message: "Your COD order has been confirmed successfully!", 
+            parcel: confirmedParcel 
+        });
+
+    } catch (error) {
+        if (error.message.includes("Invalid parcel")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: "Failed to confirm COD order." });
+    }
+};
+
+
 
 const getMyParcels = async (req, res) => {
   try {
@@ -61,7 +82,8 @@ const getParcelFiles = async (req, res) => {
 
 
 module.exports = {
-  createParcel,
+  prepareCheckout,
+  confirmCodBooking,
   getMyParcels, 
   getParcelFiles
 };

@@ -55,48 +55,32 @@ const handleSuccessfulPayment = async (session) => {
     const parcelId = session.metadata.parcelId;
     const customerId = session.metadata.customerId;
     
-    const parcel = await db.BookingParcel.findByPk(parcelId);
+    const parcel = await db.BookingParcel.findOne({ 
+        where: { id: parcelId, status: 'unconfirmed' } 
+    });
 
-    if (parcel && parcel.paymentStatus !== 'completed') {
-
-        try {
-            const oldInvoice = await db.Media.findOne({
-                where: { relatedId: parcelId, relatedType: 'parcel', mediaType: 'PARCEL_INVOICE' }
-            });
-            if (oldInvoice) {
-                const oldPath = path.join(__dirname, '../../public', oldInvoice.url);
-                await fs.unlink(oldPath); 
-                await oldInvoice.destroy();
-                console.log(`Old unpaid invoice for parcel ${parcelId} deleted.`);
-            }
-        } catch (err) {
-            console.error("Error deleting old invoice:", err.message);
-        }
-
+    if (parcel) {
+        
+        parcel.paymentMethod = 'STRIPE';
         parcel.paymentStatus = 'completed';
+        parcel.status = 'order_placed'; 
         await parcel.save();
-        await parcel.reload(); 
-        console.log(`✅ Parcel ID: ${parcelId} payment status updated to 'completed'.`);
+        
+        console.log(`✅ Parcel ID: ${parcelId} has been confirmed and paid via Stripe.`);
 
         try {
             const customer = await db.User.findByPk(customerId);
             if (customer) {
-                const newInvoiceUrl = invoiceService.generateInvoice(parcel, customer);
+                const invoiceUrl = invoiceService.generateInvoice(parcel, customer);
+                
                 await db.Media.create({
-                    url: newInvoiceUrl,
+                    url: invoiceUrl,
                     mediaType: 'PARCEL_INVOICE',
                     relatedId: parcelId,
                     relatedType: 'parcel'
                 });
-                console.log(`New PAID invoice generated for parcel ${parcelId}.`);
-            }
-        } catch (invoiceError) {
-            console.error("!!! Error generating new paid invoice:", invoiceError);
-        }
+                console.log(`Invoice generated for paid parcel ${parcelId}.`);
 
-        try {
-            const customer = await db.User.findByPk(customerId);
-            if (customer) {
                 await sendEmail({
                     email: customer.email,
                     subject: `Payment Received! Your order #${parcel.trackingNumber} is confirmed.`,
@@ -110,20 +94,14 @@ const handleSuccessfulPayment = async (session) => {
                 });
                 console.log(`Payment success email sent to ${customer.email}`);
             }
-        } catch (emailError) {
-            console.error("!!! Could not send payment success email:", emailError);
+        } catch (error) {
+            console.error("!!! Error during post-payment (invoice/email) processing:", error);
         }
 
     } else {
-        if (!parcel) {
-            console.error(`Webhook Error: Parcel with ID ${parcelId} not found.`);
-        } else {
-            console.log(`Webhook Info: Received event for already paid parcel ID: ${parcelId}. Ignoring.`);
-        }
+        console.log(`Webhook Info: Received event for a non-existent or already processed parcel ID: ${parcelId}. Ignoring.`);
     }
 };
-
-
 module.exports = {
     createCheckoutSession,
     handleSuccessfulPayment

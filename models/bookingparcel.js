@@ -40,6 +40,7 @@ module.exports = (sequelize, DataTypes) => {
       specialInstructions: DataTypes.TEXT,
       deliveryCharge: DataTypes.FLOAT,
       status: DataTypes.ENUM(
+      'unconfirmed',
       'order_placed', 
       'scheduled', 
       'picked_up', 
@@ -48,8 +49,10 @@ module.exports = (sequelize, DataTypes) => {
       'delivered', 
       'cancelled'
     ),
-      paymentMethod: DataTypes.ENUM("COD", "JAZZCASH", "STRIPE"),
-      paymentStatus: DataTypes.STRING,
+paymentMethod: {
+    type: DataTypes.ENUM('COD', 'JAZZCASH', 'STRIPE'),
+    allowNull: true 
+},      paymentStatus: DataTypes.STRING,
       pickupLat: DataTypes.FLOAT,
       pickupLng: DataTypes.FLOAT,
       deliveryLat: DataTypes.FLOAT,

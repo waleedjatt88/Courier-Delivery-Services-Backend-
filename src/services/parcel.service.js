@@ -16,10 +16,10 @@ const invoiceService = require('./invoice.service.js');
  * @param {number} customerId 
  * @returns {object} 
  */
-const createParcel = async (parcelData, customerId) => {
+const prepareCheckout = async (parcelData, customerId) => {
     const { 
         pickupAddress, deliveryAddress, packageWeight, packageSize,
-        packageContent, pickupSlot,specialInstructions, paymentMethod, 
+        packageContent, pickupSlot,specialInstructions, 
         deliveryType, zoneId 
     } = parcelData;
 
@@ -54,71 +54,80 @@ const createParcel = async (parcelData, customerId) => {
     const uniquePart = uuidv4().split('-').pop().toUpperCase();
     const trackingNumber = `PK-${uniquePart}`;
 
-    let newParcel = await BookingParcel.create({
+    const parcel = await BookingParcel.create({
         pickupAddress, deliveryAddress, packageWeight, packageSize,
-        packageContent, pickupSlot,specialInstructions, paymentMethod, deliveryType,
+        packageContent, pickupSlot,specialInstructions, deliveryType,
         customerId: customerId,
         trackingNumber: trackingNumber,
         deliveryCharge: Math.round(totalCharge), 
-        status: 'order_placed', 
+        status: 'unconfirmed', 
         paymentStatus: 'pending'
     });
-
-    try {
-        const pickupResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: newParcel.pickupAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
-        const deliveryResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: newParcel.deliveryAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
-
-        if (pickupResponse.data.results.length > 0 && deliveryResponse.data.results.length > 0) {
-            const pickupCoords = pickupResponse.data.results[0].geometry.location;
-            const deliveryCoords = deliveryResponse.data.results[0].geometry.location;
-
-            newParcel.pickupLat = pickupCoords.lat;
-            newParcel.pickupLng = pickupCoords.lng;
-            newParcel.deliveryLat = deliveryCoords.lat;
-            newParcel.deliveryLng = deliveryCoords.lng;
-            
-            await newParcel.save();
-            await newParcel.reload(); 
-        }
-    } catch (geoError) {
-        console.error("!!! Error during Geocoding API call:", geoError.message);
+    return { 
+        parcelId: parcel.id, 
+        totalCharges: parcel.deliveryCharge 
+    };
+};
+const confirmCodBooking = async (parcelId, customerId) => {
+    let parcel = await BookingParcel.findOne({ where: { id: parcelId, customerId: customerId } });
+    if (!parcel || parcel.status !== 'unconfirmed') {
+        throw new Error("Invalid parcel or parcel has already been processed.");
     }
 
-     try {
+    parcel.paymentMethod = 'COD';
+    parcel.status = 'order_placed';
+    await parcel.save();
+
+
+    try {
+        const pickupResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: parcel.pickupAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
+        const deliveryResponse = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, { params: { address: parcel.deliveryAddress, key: process.env.GOOGLE_MAPS_API_KEY } });
+
+        if (pickupResponse.data.results.length > 0 && deliveryResponse.data.results.length > 0) {
+            parcel.pickupLat = pickupResponse.data.results[0].geometry.location.lat;
+            parcel.pickupLng = pickupResponse.data.results[0].geometry.location.lng;
+            parcel.deliveryLat = deliveryResponse.data.results[0].geometry.location.lat;
+            parcel.deliveryLng = deliveryResponse.data.results[0].geometry.location.lng;
+            await parcel.save();
+        }
+    } catch (geoError) {
+        console.error("!!! Geocoding Error on COD confirm:", geoError.message);
+    }
+
+    try {
         const customer = await User.findByPk(customerId);
         if (customer) {
-            const invoiceUrl = invoiceService.generateInvoice(newParcel, customer);
-
+            const invoiceUrl = invoiceService.generateInvoice(parcel, customer);
             await Media.create({
                 url: invoiceUrl,
                 mediaType: 'PARCEL_INVOICE',
-                relatedId: newParcel.id,
+                relatedId: parcel.id,
                 relatedType: 'parcel'
             });
-            console.log(`Invoice generated and saved for parcel ${newParcel.id}`);
-
+            
             await sendEmail({
                 email: customer.email,
-                subject: `Parcel Booked! Your Tracking ID: ${newParcel.trackingNumber}`,
+                subject: `Parcel Booked! Tracking ID: ${parcel.trackingNumber}`,
                 template: 'parcelBooked',
-                data: {
+                  data: {
                     customerName: customer.fullName,
-                    trackingNumber: newParcel.trackingNumber,
-                    status: newParcel.status,
-                    pickupAddress: newParcel.pickupAddress,
-                    deliveryAddress: newParcel.deliveryAddress,
-                    deliveryCharge: newParcel.deliveryCharge,
-                    paymentMethod: newParcel.paymentMethod
-                }
-            });
-            console.log(`Booking confirmation email sent to: ${customer.email}`);
+                    trackingNumber: parcel.trackingNumber,
+                    status: parcel.status,
+                    pickupAddress: parcel.pickupAddress,
+                    deliveryAddress: parcel.deliveryAddress,
+                    deliveryCharge: parcel.deliveryCharge,
+                    paymentMethod: parcel.paymentMethod
+                }           
+             });
         }
     } catch (error) {
-        console.error("!!! Error during Invoice/Email generation:", error);
+        console.error("!!! Invoice/Email Error on COD confirm:", error);
     }
-
-    return newParcel;
+    
+    await parcel.reload();
+    return parcel;
 };
+
 
 /**
  * 
@@ -306,7 +315,8 @@ const rescheduleParcelByAdmin = async (parcelId) => {
 
 
 module.exports = {
-    createParcel,
+    prepareCheckout,
+    confirmCodBooking,
     getMyParcels,
     getAllParcels,
     getParcelById,
