@@ -72,6 +72,7 @@ const unsuspendUser = async (userId) => {
 module.exports = {
     getAllUsers,
     deleteUser,
+    updateUser,
     blockUser,
     unblockUser,
     suspendUser,

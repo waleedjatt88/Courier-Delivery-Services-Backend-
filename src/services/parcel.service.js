@@ -61,7 +61,8 @@ const prepareCheckout = async (parcelData, customerId) => {
         trackingNumber: trackingNumber,
         deliveryCharge: Math.round(totalCharge), 
         status: 'unconfirmed', 
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
+        zoneId: zoneId
     });
     return { 
         parcelId: parcel.id, 
@@ -196,7 +197,7 @@ const assignAgentToParcel = async (parcelId, agentId) => {
         throw new Error("Parcel not found with this ID.");
     }
 
-    if (parcel.status !== 'pending') {
+    if (parcel.status !== 'order_placed') {
         throw new Error(`This parcel cannot be assigned. Its status is already '${parcel.status}'.`);
     }
 
@@ -210,7 +211,9 @@ const assignAgentToParcel = async (parcelId, agentId) => {
     }
 
     parcel.agentId = agentId;
-    parcel.status = 'scheduled'; 
+    parcel.status = 'order_placed'; 
+     parcel.assignedAt = new Date(); 
+    parcel.agentAcceptanceStatus = 'pending'; 
 
     await parcel.save(); 
 
@@ -254,16 +257,23 @@ const getParcelFiles = async (parcelId, customerId) => {
 };
 
 const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
-    const parcel = await db.BookingParcel.findByPk(parcelId);
-    if (!parcel) {
-        throw new Error("Parcel not found.");
-    }
-    if (parcel.agentId !== agentId) {
-        throw new Error("Forbidden: You are not authorized to update this parcel.");
-    }
-    const agentAllowedStatuses = ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'];
+    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
+    if (!parcel) throw new Error("Parcel not found or not assigned to you.");
+    if (parcel.agentAcceptanceStatus !== 'accepted') throw new Error("You must accept the job first.");
+
+    const agentAllowedStatuses = ['picked_up','in_transit', 'out_for_delivery', 'delivered'];
     if (!agentAllowedStatuses.includes(newStatus)) {
-        throw new Error(`Invalid status update. Agents can only set status to: ${agentAllowedStatuses.join(', ')}.`);
+        throw new Error(`Invalid status update by agent.`);
+    }
+
+    if (newStatus === 'delivered' && !parcel.agentCommission) {
+    const globalZone = await db.Zone.findOne({ where: { name: 'GLOBAL_SETTINGS' } });
+    if (globalZone) {
+        const globalPricingRule = await db.Pricing.findOne({ where: { zoneId: globalZone.id } });
+        if (globalPricingRule) {
+            parcel.agentCommission = parcel.deliveryCharge * (globalPricingRule.agentCommissionPercent / 100);
+            }
+        }
     }
 
     parcel.status = newStatus;
@@ -313,6 +323,39 @@ const rescheduleParcelByAdmin = async (parcelId) => {
     return parcel;
 };
 
+const acceptJobByAgent = async (parcelId, agentId) => {
+    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
+    if (!parcel) throw new Error("Parcel not found or not assigned to you.");
+
+    if (new Date() > new Date(parcel.assignedAt.getTime() + 10 * 60 * 1000)) {
+        parcel.agentAcceptanceStatus = 'rejected';
+        parcel.agentRejectionReason = 'Auto-rejected: Timed out';
+        parcel.agentId = null; 
+        parcel.status = 'order_placed'; 
+        await parcel.save();
+        throw new Error("Acceptance time has expired. Job has been unassigned.");
+    }
+
+    parcel.agentAcceptanceStatus = 'accepted';
+    parcel.status = 'scheduled'; 
+    await parcel.save();
+    return parcel;
+};
+
+const rejectJobByAgent = async (parcelId, agentId, reason) => {
+    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
+    if (!parcel) throw new Error("Parcel not found or not assigned to you.");
+
+    parcel.agentAcceptanceStatus = 'rejected';
+    parcel.agentRejectionReason = reason || 'No reason provided.';
+    parcel.agentId = null; 
+    parcel.status = 'order_placed'; 
+    await parcel.save();
+
+    return parcel;
+};
+
+
 
 module.exports = {
     prepareCheckout,
@@ -325,5 +368,7 @@ module.exports = {
     updateParcelStatusByAgent,
     getParcelFiles,
     cancelParcelByAdmin,
-    rescheduleParcelByAdmin
+    rescheduleParcelByAdmin,
+    acceptJobByAgent ,
+    rejectJobByAgent
 };

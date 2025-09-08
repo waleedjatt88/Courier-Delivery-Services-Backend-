@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/admin.controller.js");
-
 const authController = require("../controllers/auth.controller.js");
+const staticPageController = require('../controllers/static-page.controller.js');
+
 
 const {
   verifyToken,
@@ -87,6 +88,15 @@ router.patch('/pricing/:id', [verifyToken, isAdmin, refreshCookie], adminControl
 
 router.patch('/parcels/:id/cancel', [verifyToken, isAdmin, refreshCookie], adminController.cancelParcel);
 router.patch('/parcels/:id/reschedule', [verifyToken, isAdmin, refreshCookie], adminController.rescheduleParcel);
+
+router.get('/static-pages', [verifyToken, isAdmin, refreshCookie], staticPageController.getAllStaticPages);
+router.post('/static-pages', [verifyToken, isAdmin, refreshCookie], staticPageController.createStaticPage);
+router.get('/static-pages/:pageType', [verifyToken, isAdmin, refreshCookie], staticPageController.getStaticPageByType);
+router.patch('/static-pages/:pageType', [verifyToken, isAdmin, refreshCookie], staticPageController.updateStaticPage);
+router.delete('/static-pages/:pageType', [verifyToken, isAdmin, refreshCookie], staticPageController.deleteStaticPage);
+
+router.get('/stats/dashboard', [verifyToken, isAdmin], adminController.getDashboardStats);
+router.get('/agents/:id/performance', [verifyToken, isAdmin], adminController.getAgentPerformance);
 
 
 module.exports = router;

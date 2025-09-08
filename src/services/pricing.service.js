@@ -21,7 +21,7 @@ const updatePricingRule = async (ruleId, updateData) => {
         throw new Error("Pricing rule not found.");
     }
 
-    const allowedUpdates = ['baseFare', 'perKgCharge', 'expressChargePercent'];
+    const allowedUpdates = ['baseFare', 'perKgCharge', 'expressChargePercent','agentCommissionPercent'];
     const updates = {};
     for (const key of allowedUpdates) {
         if (updateData[key] !== undefined) {

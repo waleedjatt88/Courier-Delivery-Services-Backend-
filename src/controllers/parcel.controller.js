@@ -1,4 +1,3 @@
-
 const parcelService = require("../services/parcel.service.js");
 
 
@@ -21,11 +20,11 @@ const prepareCheckout = async (req, res) => {
         });
     }
 
-    const newParcel = await parcelService.createParcel(parcelData, customerId);
+    const parcel = await parcelService.prepareCheckout(parcelData, customerId);
 
     res
       .status(201)
-      .json({ message: "Parcel booked successfully!", parcel: newParcel });
+      .json({ message: "Parcel booked successfully!", parcel: parcel });
   } catch (error) {
     console.error("Error booking parcel:", error);
     res
@@ -76,7 +75,7 @@ const getParcelFiles = async (req, res) => {
         const files = await parcelService.getParcelFiles(parcelId, customerId);
         res.status(200).json({ files: files });
     } catch (error) {
-      
+        res.status(500).json({ message: "Failed to fetch parcel files.", error: error.message });
     }
 };
 

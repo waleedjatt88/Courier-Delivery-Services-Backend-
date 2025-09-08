@@ -3,6 +3,7 @@ const adminService = require('../services/admin.service.js');
 const parcelService = require('../services/parcel.service.js');
 const ticketService = require('../services/ticket.service.js'); 
 const pricingService = require('../services/pricing.service.js'); 
+const reportingService = require('../services/reporting.service.js');
 
 
 
@@ -214,6 +215,20 @@ const rescheduleParcel = async (req, res) => {
     }
 };
 
+const getDashboardStats = async (req, res) => {
+    try {
+        const stats = await reportingService.getDashboardStats(req.query.period || 'daily');
+        res.status(200).json(stats);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+const getAgentPerformance = async (req, res) => {
+    try {
+        const performance = await reportingService.getAgentPerformance(req.params.id);
+        res.status(200).json(performance);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 
 module.exports = {
     getAllUsers,
@@ -232,6 +247,8 @@ module.exports = {
     getPricingRules,
     updatePricingRule,
     cancelParcel,
-    rescheduleParcel
+    rescheduleParcel,
+    getDashboardStats,
+    getAgentPerformance
 
 };

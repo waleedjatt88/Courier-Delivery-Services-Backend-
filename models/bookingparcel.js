@@ -57,8 +57,11 @@ paymentMethod: {
       pickupLng: DataTypes.FLOAT,
       deliveryLat: DataTypes.FLOAT,
       deliveryLng: DataTypes.FLOAT,
-      deliveryType: DataTypes.ENUM('scheduled', 'instant')
-
+      deliveryType: DataTypes.ENUM('scheduled', 'instant'),
+      agentAcceptanceStatus: DataTypes.ENUM('pending', 'accepted', 'rejected'),
+      agentRejectionReason: DataTypes.TEXT,
+      assignedAt: DataTypes.DATE,
+      agentCommission: DataTypes.FLOAT,
     },
 
     {

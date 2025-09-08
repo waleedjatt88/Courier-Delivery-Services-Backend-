@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => {
       baseFare: DataTypes.FLOAT,
       perKgCharge: DataTypes.FLOAT,
       expressChargePercent: DataTypes.FLOAT,
+      agentCommissionPercent: DataTypes.FLOAT
+
     },
     {
       sequelize,

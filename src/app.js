@@ -1,4 +1,3 @@
-
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -23,6 +22,8 @@ const paymentRoutes = require("./routes/payment.routes.js");
 const ticketRoutes = require("./routes/ticket.routes.js");
 const chatRoutes = require('./routes/chat.routes.js');
 const paymentController = require("./controllers/payment.controller.js");
+const publicRoutes = require('./routes/public.routes.js');
+const { autoRejectJob } = require('./scheduler.js');
 const initializeSocket = require('./socket-handler.js');
 require("./config/passport-setup.js"); 
 
@@ -84,6 +85,7 @@ app.use("/api/parcels", parcelRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api', publicRoutes);
 
 
 app.get("/", (req, res) => {
@@ -94,6 +96,7 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {
+  autoRejectJob.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
   console.log(`Accessible on your network at: http://192.168.100.120:${PORT}`);

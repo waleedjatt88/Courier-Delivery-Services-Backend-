@@ -1,15 +1,11 @@
-
-
 FROM node:18-alpine
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
-
-COPY . .
+RUN npm install nodemon -g
 
 EXPOSE 3000
 
-
-CMD ["sh", "-c", "npx sequelize-cli db:migrate && npm start"]
+CMD ["sh", "-c", "npx sequelize-cli db:migrate && nodemon src/app.js"]
