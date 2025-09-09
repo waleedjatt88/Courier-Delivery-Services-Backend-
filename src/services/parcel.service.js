@@ -257,13 +257,22 @@ const getParcelFiles = async (parcelId, customerId) => {
 };
 
 const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
-    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
+    const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId } });
     if (!parcel) throw new Error("Parcel not found or not assigned to you.");
     if (parcel.agentAcceptanceStatus !== 'accepted') throw new Error("You must accept the job first.");
 
-    const agentAllowedStatuses = ['picked_up','in_transit', 'out_for_delivery', 'delivered'];
+    const agentAllowedStatuses = ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'];
     if (!agentAllowedStatuses.includes(newStatus)) {
-        throw new Error(`Invalid status update by agent.`);
+        throw new Error("Invalid status update by agent.");
+    }
+    if (parcel.status === 'delivered') {
+        throw new Error("Parcel already delivered. Status cannot be changed.");
+    }
+    const currentIndex = agentAllowedStatuses.indexOf(parcel.status);
+    const newIndex = agentAllowedStatuses.indexOf(newStatus);
+
+    if (newIndex === -1 || newIndex !== currentIndex + 1) {
+        throw new Error(`Invalid status transition. Must follow sequence: ${agentAllowedStatuses.join(" -> ")}`);
     }
 
     if (newStatus === 'delivered' && !parcel.agentCommission) {
@@ -297,8 +306,9 @@ const cancelParcelByAdmin = async (parcelId) => {
     }
 
     parcel.status = 'cancelled';
+    parcel.pickSlot = null;   
+    parcel.agentId = null;    
     await parcel.save();
-
 
     return parcel;
 };
@@ -306,22 +316,31 @@ const cancelParcelByAdmin = async (parcelId) => {
 /**
  * 
  * @param {number} parcelId 
+ * @param {Date} newPickSlot   
  * @returns {object} 
  */
-const rescheduleParcelByAdmin = async (parcelId) => {
+const rescheduleParcelByAdmin = async (parcelId, newPickSlot) => {
     const parcel = await db.BookingParcel.findByPk(parcelId);
     if (!parcel) {
         throw new Error("Parcel not found.");
     }
 
     if (parcel.status !== 'cancelled') {
-        throw new Error(`Only cancelled parcels can be rescheduled. This parcel's status is '${parcel.status}'.`);
+        throw new Error(`Only cancelled parcels can be rescheduled. Current status: '${parcel.status}'.`);
     }
-    parcel.status = 'order_placed';  
-    parcel.agentId = null; 
+
+    if (!newPickSlot) {
+        throw new Error("New pickSlot is required when rescheduling.");
+    }
+
+    parcel.status = 'order_placed';
+    parcel.agentId = null;     
+    parcel.pickSlot = newPickSlot; 
     await parcel.save();
+
     return parcel;
 };
+
 
 const acceptJobByAgent = async (parcelId, agentId) => {
     const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });

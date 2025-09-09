@@ -1,37 +1,71 @@
-const db = require('../../models');
+const db = require('../../models');  
 const { BookingParcel, User } = db;
 const { Op } = require('sequelize');
 
 const getDateRange = (period) => {
     const end = new Date();
     const start = new Date();
-    if (period === 'daily') {
-        start.setHours(0, 0, 0, 0);
-    } else if (period === 'monthly') {
-        start.setDate(1);
-        start.setHours(0, 0, 0, 0);
-    } else if (period === 'yearly') {
-        start.setMonth(0, 1);
-        start.setHours(0, 0, 0, 0);
+    
+    switch(period) {
+        case 'daily':
+            start.setHours(0, 0, 0, 0);
+            break;
+        case 'monthly':
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+            break;
+        case 'yearly':
+            start.setMonth(0, 1);
+            start.setHours(0, 0, 0, 0);
+            break;
+        default:
+            throw new Error('Invalid period specified');
     }
+    
     return { start, end };
 };
 
 const getDashboardStats = async (period) => {
-    const { start, end } = getDateRange(period);
-    const periodWhere = { createdAt: { [Op.between]: [start, end] } };
+    try {
+        const { start, end } = getDateRange(period);
+        console.log('Date range:', { start, end }); 
 
-    const totalBookings = await BookingParcel.count({ where: periodWhere });
-    
-    const revenue = await BookingParcel.sum('deliveryCharge', { 
-        where: { 
-            paymentStatus: 'completed',
-            ...periodWhere 
-        }
-    });    
-    
-    return { totalBookings, totalRevenue: revenue || 0 };
+        const deliveredParcels = await BookingParcel.findAll({ 
+            where: { 
+                status: 'delivered',
+                paymentStatus: 'completed',
+                updatedAt: { [Op.between]: [start, end] } 
+            },
+            raw: true
+        });
+        console.log('Delivered parcels:', deliveredParcels);
+
+        const totalBookings = await BookingParcel.count({ 
+            where: { 
+                status: 'delivered',
+                updatedAt: { [Op.between]: [start, end] } // Changed from createdAt to updatedAt
+            }
+        });
+
+        const revenue = await BookingParcel.sum('deliveryCharge', { 
+            where: { 
+                status: 'delivered',
+                paymentStatus: 'completed',
+                updatedAt: { [Op.between]: [start, end] } // Changed from createdAt to updatedAt
+            }
+        });
+
+        return { 
+            totalBookings, 
+            totalRevenue: revenue || 0,
+            period: period
+        };
+    } catch (error) {
+        console.error('Error in getDashboardStats:', error);
+        throw error;
+    }
 };
+
 
 const getAgentPerformance = async (agentId) => {
     const deliveredCount = await BookingParcel.count({ where: { agentId, status: 'delivered' } });

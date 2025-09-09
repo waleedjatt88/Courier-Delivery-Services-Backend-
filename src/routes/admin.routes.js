@@ -99,4 +99,8 @@ router.get('/stats/dashboard', [verifyToken, isAdmin], adminController.getDashbo
 router.get('/agents/:id/performance', [verifyToken, isAdmin], adminController.getAgentPerformance);
 
 
+router.post('/manual-orders/prepare', [verifyToken, isAdmin], adminController.prepareManualOrder);
+router.patch('/manual-orders/:id/confirm-cash', [verifyToken, isAdmin], adminController.confirmPayNowOrder);
+router.post('/manual-orders/:id/send-link', [verifyToken, isAdmin], adminController.sendPaymentLink);
+
 module.exports = router;

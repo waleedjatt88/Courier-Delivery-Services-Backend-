@@ -50,7 +50,7 @@ module.exports = (sequelize, DataTypes) => {
       'cancelled'
     ),
 paymentMethod: {
-    type: DataTypes.ENUM('COD', 'JAZZCASH', 'STRIPE'),
+    type: DataTypes.ENUM('COD', 'JAZZCASH', 'STRIPE','CASH'),
     allowNull: true 
 },      paymentStatus: DataTypes.STRING,
       pickupLat: DataTypes.FLOAT,
@@ -62,6 +62,8 @@ paymentMethod: {
       agentRejectionReason: DataTypes.TEXT,
       assignedAt: DataTypes.DATE,
       agentCommission: DataTypes.FLOAT,
+      bookingsource: DataTypes.ENUM('web', 'manual')
+
     },
 
     {

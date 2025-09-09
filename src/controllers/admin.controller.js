@@ -4,6 +4,7 @@ const parcelService = require('../services/parcel.service.js');
 const ticketService = require('../services/ticket.service.js'); 
 const pricingService = require('../services/pricing.service.js'); 
 const reportingService = require('../services/reporting.service.js');
+const manualOrderService = require('../services/manualOrder.service.js');
 
 
 
@@ -229,6 +230,28 @@ const getAgentPerformance = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+const prepareManualOrder = async (req, res) => {
+    try {
+        const { customer, parcel } = req.body;
+        const result = await manualOrderService.prepareManualCheckout(customer, parcel);
+        res.status(200).json(result);
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const confirmPayNowOrder = async (req, res) => {
+    try {
+        const parcel = await manualOrderService.confirmPayNow(req.params.id);
+        res.status(200).json({ message: "Manual order confirmed with CASH payment.", parcel });
+    } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const sendPaymentLink = async (req, res) => {
+    try {
+        const result = await manualOrderService.sendPaymentLink(req.params.id);
+        res.status(200).json(result);
+    } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 
 module.exports = {
     getAllUsers,
@@ -249,6 +272,9 @@ module.exports = {
     cancelParcel,
     rescheduleParcel,
     getDashboardStats,
-    getAgentPerformance
+    getAgentPerformance,
+    prepareManualOrder,
+    confirmPayNowOrder,
+    sendPaymentLink
 
 };

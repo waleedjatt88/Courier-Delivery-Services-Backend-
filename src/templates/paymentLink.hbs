@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+        <img src="{{logoUrl}}" alt="DevGo Logo" style="width: 150px; display: block; margin-bottom: 20px;" />
+        
+        <h3>Payment Required for Order #{{trackingNumber}}</h3>
+        
+        <p>Hello {{customerName}},</p>
+        <p>Your manual order has been created. To confirm your booking, please complete the payment of <strong>Rs. {{totalCharges}}</strong> by clicking the secure link below.</p>
+        
+        <a href="{{paymentUrl}}" target="_blank" style="display: inline-block; padding: 12px 25px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">
+            Pay Now
+        </a>
+
+        <p>This link is valid for 24 hours.</p>
+        <p>Thank you,<br>The DevGo Team</p>
+    </div>
+</body>
+</html>
