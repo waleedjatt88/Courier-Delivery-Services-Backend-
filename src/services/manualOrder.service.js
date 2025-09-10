@@ -42,7 +42,7 @@ const prepareManualCheckout = async (customerData, parcelData) => {
         trackingNumber: trackingNumber,
         status: 'unconfirmed',
         paymentStatus: 'pending',
-        source: 'manual' 
+        bookingsource: 'manual' 
     });
 
     return { parcelId: parcel.id, totalCharges: parcel.deliveryCharge };

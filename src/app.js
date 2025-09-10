@@ -99,5 +99,5 @@ server.listen(PORT, "0.0.0.0", () => {
   autoRejectJob.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
-  console.log(`Accessible on your network at: http://192.168.100.120:${PORT}`);
+  console.log(`Accessible on your network at: http:// 192.168.100.217:${PORT}`);
 });

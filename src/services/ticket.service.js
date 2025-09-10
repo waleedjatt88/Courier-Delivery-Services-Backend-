@@ -14,7 +14,7 @@ const createTicket = async (ticketData, customerId) => {
     const newTicket = await Ticket.create({
         subject: subject,
         description: description,
-        parcelId: parcelId || null, 
+        parcelId: parcelId || null,
         customerId: customerId, 
         status: 'open' 
     });

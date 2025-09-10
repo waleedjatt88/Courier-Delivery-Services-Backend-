@@ -1,4 +1,3 @@
-
 'use strict';
 
 const db = require('../../models'); 
@@ -196,9 +195,16 @@ const assignAgentToParcel = async (parcelId, agentId) => {
     if (!parcel) {
         throw new Error("Parcel not found with this ID.");
     }
+    if (parcel.agentAcceptanceStatus === 'accepted') {
+        throw new Error(
+            `This parcel already has an assigned agent (ID: ${parcel.agentId}). Current parcel status: '${parcel.status}'.`
+        );
+    }
 
     if (parcel.status !== 'order_placed') {
-        throw new Error(`This parcel cannot be assigned. Its status is already '${parcel.status}'.`);
+        throw new Error(
+            `This parcel cannot be assigned because its current status is '${parcel.status}'.`
+        );
     }
 
     const agent = await db.User.findByPk(agentId);
@@ -209,16 +215,27 @@ const assignAgentToParcel = async (parcelId, agentId) => {
     if (agent.role !== 'agent') {
         throw new Error(`User with ID ${agentId} is not a delivery agent.`);
     }
+    if (
+        parcel.agentAcceptanceStatus === 'rejected' &&
+        parcel.agentRejectionReason &&
+        !parcel.agentRejectionReason.startsWith("Auto-rejected")
+    ) {
+        throw new Error(
+            `This agent previously rejected the job. Reason: "${parcel.agentRejectionReason}". Please assign another agent.`
+        );
+    }
 
     parcel.agentId = agentId;
     parcel.status = 'order_placed'; 
-     parcel.assignedAt = new Date(); 
+    parcel.assignedAt = new Date(); 
     parcel.agentAcceptanceStatus = 'pending'; 
+    parcel.agentRejectionReason = null; 
 
     await parcel.save(); 
 
     return parcel;
 };
+
 
 /**
  * 
@@ -306,7 +323,6 @@ const cancelParcelByAdmin = async (parcelId) => {
     }
 
     parcel.status = 'cancelled';
-    parcel.pickSlot = null;   
     parcel.agentId = null;    
     await parcel.save();
 
@@ -316,10 +332,10 @@ const cancelParcelByAdmin = async (parcelId) => {
 /**
  * 
  * @param {number} parcelId 
- * @param {Date} newPickSlot   
+ * @param {Date} pickupSlot   
  * @returns {object} 
  */
-const rescheduleParcelByAdmin = async (parcelId, newPickSlot) => {
+const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
     const parcel = await db.BookingParcel.findByPk(parcelId);
     if (!parcel) {
         throw new Error("Parcel not found.");
@@ -329,22 +345,36 @@ const rescheduleParcelByAdmin = async (parcelId, newPickSlot) => {
         throw new Error(`Only cancelled parcels can be rescheduled. Current status: '${parcel.status}'.`);
     }
 
-    if (!newPickSlot) {
-        throw new Error("New pickSlot is required when rescheduling.");
+    if (!pickupSlot || pickupSlot.trim() === '') {
+        throw new Error("New pickup slot is required when rescheduling.");
     }
 
-    parcel.status = 'order_placed';
-    parcel.agentId = null;     
-    parcel.pickSlot = newPickSlot; 
-    await parcel.save();
+    const originalPickupSlot = pickupSlot;
 
-    return parcel;
+    try {
+        await parcel.update({
+            status: 'order_placed',
+            agentId: null,
+            pickupSlot: originalPickupSlot, 
+            updatedAt: new Date()
+        });
+
+        await parcel.reload();
+        return parcel;
+    } catch (error) {
+        console.error("Error in rescheduleParcelByAdmin:", error);
+        throw new Error("Failed to reschedule parcel. Please try again.");
+    }
 };
 
 
 const acceptJobByAgent = async (parcelId, agentId) => {
     const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
     if (!parcel) throw new Error("Parcel not found or not assigned to you.");
+
+    if (parcel.agentAcceptanceStatus === 'accepted') {
+        throw new Error("You have already accepted this job.");
+    }
 
     if (new Date() > new Date(parcel.assignedAt.getTime() + 10 * 60 * 1000)) {
         parcel.agentAcceptanceStatus = 'rejected';
@@ -362,11 +392,19 @@ const acceptJobByAgent = async (parcelId, agentId) => {
 };
 
 const rejectJobByAgent = async (parcelId, agentId, reason) => {
+    if (!reason || reason.trim() === "") {
+        throw new Error("Rejection reason is required.");
+    }
+
     const parcel = await db.BookingParcel.findOne({ where: { id: parcelId, agentId: agentId } });
     if (!parcel) throw new Error("Parcel not found or not assigned to you.");
 
+    if (parcel.agentAcceptanceStatus === 'accepted') {
+        throw new Error("You cannot reject a job after accepting it.");
+    }
+
     parcel.agentAcceptanceStatus = 'rejected';
-    parcel.agentRejectionReason = reason || 'No reason provided.';
+    parcel.agentRejectionReason = reason;
     parcel.agentId = null; 
     parcel.status = 'order_placed'; 
     await parcel.save();

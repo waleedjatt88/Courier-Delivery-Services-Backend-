@@ -60,7 +60,6 @@ const handleSuccessfulPayment = async (session) => {
     });
 
     if (parcel) {
-        
         parcel.paymentMethod = 'STRIPE';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed'; 
@@ -70,6 +69,11 @@ const handleSuccessfulPayment = async (session) => {
 
         try {
             const customer = await db.User.findByPk(customerId);
+
+            if (parcel.bookingsource === 'manual' && customer && customer.role === 'guest') {
+                console.log(`Guest manual order detected for user: ${customer.email}`);
+            }
+
             if (customer) {
                 const invoiceUrl = invoiceService.generateInvoice(parcel, customer);
                 
@@ -86,7 +90,7 @@ const handleSuccessfulPayment = async (session) => {
                     subject: `Payment Received! Your order #${parcel.trackingNumber} is confirmed.`,
                     template: 'paymentSuccess',
                     data: {
-                        customerName: customer.fullName,
+                        customerName: customer.fullName || "Dear Customer",
                         trackingNumber: parcel.trackingNumber,
                         paymentDate: new Date().toLocaleDateString('en-GB'),
                         amountPaid: parcel.deliveryCharge
@@ -102,6 +106,7 @@ const handleSuccessfulPayment = async (session) => {
         console.log(`Webhook Info: Received event for a non-existent or already processed parcel ID: ${parcelId}. Ignoring.`);
     }
 };
+
 module.exports = {
     createCheckoutSession,
     handleSuccessfulPayment

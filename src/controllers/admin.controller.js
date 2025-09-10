@@ -198,13 +198,19 @@ const cancelParcel = async (req, res) => {
     }
 };
 
-const rescheduleParcel = async (req, res) => {
+     const rescheduleParcel = async (req, res) => {
     try {
         const parcelId = req.params.id;
-        const updatedParcel = await parcelService.rescheduleParcelByAdmin(parcelId);
+        const { pickupSlot } = req.body; 
+
+        if (!pickupSlot) {
+            return res.status(400).json({ message: "New pickup slot is required in the body." });
+        }
+
+        const updatedParcel = await parcelService.rescheduleParcelByAdmin(parcelId, pickupSlot);
 
         res.status(200).json({
-            message: `Parcel ${updatedParcel.trackingNumber} has been rescheduled. Please assign an agent.`,
+            message: `Parcel ${updatedParcel.trackingNumber} has been successfully rescheduled.`,
             parcel: updatedParcel
         });
 
