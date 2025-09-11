@@ -62,7 +62,8 @@ paymentMethod: {
       agentRejectionReason: DataTypes.TEXT,
       assignedAt: DataTypes.DATE,
       agentCommission: DataTypes.FLOAT,
-      bookingsource: DataTypes.ENUM('web', 'manual')
+      bookingsource: DataTypes.ENUM('web', 'manual'),
+      remainingAmount: DataTypes.FLOAT
 
     },
 

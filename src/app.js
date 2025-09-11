@@ -34,8 +34,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
     'http://localhost:5173',      
     'http://localhost:5174',      
-    'http://127.0.0.1:5500',      
-    'http://192.168.100.120:5173', 
+    'http://localhost:3000',     
 ];
 
 const io = new Server(server, {
@@ -99,5 +98,5 @@ server.listen(PORT, "0.0.0.0", () => {
   autoRejectJob.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
-  console.log(`Accessible on your network at: http:// 192.168.100.217:${PORT}`);
+  console.log(`Accessible on your network at: http://192.168.100.238:${PORT}`);
 });

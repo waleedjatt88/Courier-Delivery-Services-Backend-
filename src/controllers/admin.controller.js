@@ -258,6 +258,24 @@ const sendPaymentLink = async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+const confirmCodPayment = async (req, res) => {
+    try {
+        const parcelId = req.params.id;
+        const updatedParcel = await parcelService.confirmCodPaymentByAdmin(parcelId);
+
+        res.status(200).json({
+            message: `COD payment for parcel ${updatedParcel.trackingNumber} has been confirmed.`,
+            parcel: updatedParcel
+        });
+
+    } catch (error) {
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(400).json({ message: "COD confirmation failed: " + error.message });
+    }
+};
+
 
 module.exports = {
     getAllUsers,
@@ -281,6 +299,7 @@ module.exports = {
     getAgentPerformance,
     prepareManualOrder,
     confirmPayNowOrder,
-    sendPaymentLink
+    sendPaymentLink,
+    confirmCodPayment
 
 };

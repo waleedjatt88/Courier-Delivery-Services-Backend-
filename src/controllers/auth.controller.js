@@ -1,13 +1,12 @@
-
 const authService = require('../services/auth.service.js');
 const jwt = require('jsonwebtoken');
 
+const blacklistedTokens = new Set();
 
-
-exports.register = async (req, res) => {
+const register = async (req, res) => {
     try {
         const { phoneNumber } = req.body;
-       if (!/^\d{11}$/.test(phoneNumber)) {
+        if (!/^\d{11}$/.test(phoneNumber)) {
             return res.status(400).json({ message: "Phone number must be numeric and exactly 11 digits (e.g. 03XXXXXXXXX)." });
         }
 
@@ -19,20 +18,25 @@ exports.register = async (req, res) => {
     }
 };
 
-exports.login = async (req, res) => {
+const login = async (req, res) => {
     try {
         const data = await authService.login(req.body);
         console.log(`User logged in: ${data.user.email} | Role: ${data.user.role}`);
-
-        res.cookie('jwt', data.token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 60 * 1000
-        });
+        
+        const token = jwt.sign(
+            { 
+                id: data.user.id, 
+                role: data.user.role 
+            },
+            process.env.JWT_SECRET,
+            { 
+                expiresIn: '7d'  
+            }
+        );
 
         res.status(200).json({
             message: 'Login successful!',
+            token, 
             user: data.user
         });
 
@@ -41,7 +45,7 @@ exports.login = async (req, res) => {
     }
 };
 
-exports.verifyOtp = async (req, res) => {
+const verifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
         if (!email || !otp) {
@@ -58,9 +62,7 @@ exports.verifyOtp = async (req, res) => {
     }
 };
 
-
-
-exports.forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -73,8 +75,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-
-exports.verifyPasswordResetOtp = async (req, res) => {
+const verifyPasswordResetOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -87,8 +88,7 @@ exports.verifyPasswordResetOtp = async (req, res) => {
   }
 };
 
-
-exports.resetPassword = async (req, res) => {
+const resetPassword = async (req, res) => {
     try {
         const { resetToken, password, confirmPassword } = req.body;
 
@@ -107,15 +107,15 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-exports.logout = (req, res) => {
-    res.cookie('jwt', '', {
-        httpOnly: true,
-        expires: new Date(0) 
-    });
-    res.status(200).json({ message: "Logout successful" });
+const logout = (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+        blacklistedTokens.add(token);
+    }
+    res.status(200).json({ message: "Logout successful, token expired." });
 };
 
-exports.resendOtp = async (req, res) => {
+const resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -128,22 +128,33 @@ exports.resendOtp = async (req, res) => {
   }
 };
 
-exports.googleCallback = (req, res) => {
+const googleCallback = (req, res) => {
     const user = req.user;
 
     const token = jwt.sign(
-        { id: user.id, role: user.role },
+        { 
+            id: user.id, 
+            role: user.role 
+        },
         process.env.JWT_SECRET,
-        { expiresIn: '1h' } 
+        { 
+            expiresIn: '7d'  
+        }
     );
     
-    res.cookie('jwt', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', 
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 1000 
-    });
+    res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
+};
 
-    
-    res.redirect('http://localhost:5173/dashboard'); 
+// Group all exports at the end
+module.exports = {
+    blacklistedTokens,
+    register,
+    login,
+    verifyOtp,
+    forgotPassword,
+    verifyPasswordResetOtp,
+    resetPassword,
+    logout,
+    resendOtp,
+    googleCallback
 };

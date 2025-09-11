@@ -1,25 +1,24 @@
-
 const jwt = require('jsonwebtoken');
+const { blacklistedTokens } = require("../controllers/auth.controller.js");
+
+
 
 const verifyToken = (req, res, next) => {
-    const token = req.cookies.jwt;
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided." });
 
-    if (!token) {
-        return res.status(401).json({ message: "Not authorized, no token provided." });
-    }
+  if (blacklistedTokens.has(token)) {
+    return res.status(401).json({ message: "Token has been revoked. Please login again." });
+  }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        req.user = decoded;
-        
-        next();
-
-    } catch (err) {
-        return res.status(401).json({ message: "Not authorized, token failed." });
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid or expired token." });
+  }
 };
-
 const isAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -27,30 +26,6 @@ const isAdmin = (req, res, next) => {
         res.status(403).json({ message: "Access denied. Admin role required." });
     }
 };
-
-const refreshCookie = (req, res, next) => {
-    try {
-        if (req.user) {
-            const tokenPayload = { id: req.user.id, role: req.user.role };
-
-            const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-                expiresIn: '1h' 
-            });
-            
-            res.cookie('jwt', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 60 * 60 * 1000 
-            });
-        }
-    } catch (error) {
-        console.error("Error refreshing cookie:", error);
-    }
-    
-    next();
-};
-
 
 const isAgent = (req, res, next) => {
     if (req.user && req.user.role === 'agent') {
@@ -63,6 +38,5 @@ const isAgent = (req, res, next) => {
 module.exports = {
     verifyToken,
     isAdmin,
-    isAgent, 
-    refreshCookie
+    isAgent
 };

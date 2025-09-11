@@ -291,21 +291,41 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
     if (newIndex === -1 || newIndex !== currentIndex + 1) {
         throw new Error(`Invalid status transition. Must follow sequence: ${agentAllowedStatuses.join(" -> ")}`);
     }
-
     if (newStatus === 'delivered' && !parcel.agentCommission) {
-    const globalZone = await db.Zone.findOne({ where: { name: 'GLOBAL_SETTINGS' } });
-    if (globalZone) {
-        const globalPricingRule = await db.Pricing.findOne({ where: { zoneId: globalZone.id } });
-        if (globalPricingRule) {
-            parcel.agentCommission = parcel.deliveryCharge * (globalPricingRule.agentCommissionPercent / 100);
+
+        const globalZone = await db.Zone.findOne({ where: { name: 'GLOBAL_SETTINGS' } });
+        if (globalZone) {
+            const globalPricingRule = await db.Pricing.findOne({ where: { zoneId: globalZone.id } });
+            
+            if (globalPricingRule) {
+                commissionRate = globalPricingRule.agentCommissionPercent;
             }
         }
+         if (parcel.paymentMethod !== 'COD') {
+        const commissionRate = await getGlobalCommissionRate();
+        const calculatedCommission = parcel.deliveryCharge * (commissionRate / 100);
+        const calculatedRemaining = parcel.deliveryCharge - calculatedCommission;
+        
+        parcel.agentCommission = Math.round(calculatedCommission); 
+        parcel.remainingAmount = Math.round(calculatedRemaining);
+        
+    }
     }
 
     parcel.status = newStatus;
     await parcel.save();
     return parcel;
-};
+}; 
+async function getGlobalCommissionRate() {
+    const globalZone = await db.Zone.findOne({ where: { name: 'GLOBAL_SETTINGS' } });
+    if (globalZone) {
+        const globalPricingRule = await db.Pricing.findOne({ where: { zoneId: globalZone.id } });
+        if (globalPricingRule) {
+            commissionRate = globalPricingRule.agentCommissionPercent;
+        }
+    }
+    return commissionRate;
+}
 
 /**
  * 
@@ -412,6 +432,26 @@ const rejectJobByAgent = async (parcelId, agentId, reason) => {
     return parcel;
 };
 
+const confirmCodPaymentByAdmin = async (parcelId) => {
+    const parcel = await db.BookingParcel.findByPk(parcelId);
+    if (!parcel) throw new Error("Parcel not found.");
+    if (parcel.paymentMethod !== 'COD') throw new Error("This is not a COD order.");
+    if (parcel.status !== 'delivered') throw new Error("Payment can only be confirmed for delivered parcels.");
+    if (parcel.paymentStatus === 'completed') throw new Error("Payment for this parcel is already completed.");
+
+    const commissionRate = await getGlobalCommissionRate();
+    const calculatedCommission = parcel.deliveryCharge * (commissionRate / 100);
+    const calculatedRemaining = parcel.deliveryCharge - calculatedCommission;
+
+    parcel.agentCommission = Math.round(calculatedCommission);
+    parcel.remainingAmount = Math.round(calculatedRemaining);
+    parcel.paymentStatus = 'completed'; 
+
+    await parcel.save();
+    return parcel;
+};
+
+
 
 
 module.exports = {
@@ -427,5 +467,6 @@ module.exports = {
     cancelParcelByAdmin,
     rescheduleParcelByAdmin,
     acceptJobByAgent ,
-    rejectJobByAgent
-};
+    rejectJobByAgent ,
+    confirmCodPaymentByAdmin 
+};      

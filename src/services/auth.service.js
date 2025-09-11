@@ -74,21 +74,21 @@ const login = async (loginData) => {
     const user = await User.findOne({ where: { email } });
     if (!user) {
         throw new Error('Invalid credentials - User not found');
-
     }
 
-     if (user.isActive === false) {
+    if (user.isActive === false) {
         throw new Error('Your account has been blocked. Please contact support.');
     }
 
     if (user.suspendedUntil && user.suspendedUntil > new Date()) {
-        
-        const suspensionEndDate = user.suspendedUntil.toLocaleString('en-PK', { timeZone: 'Asia/Karachi' });
-        throw new Error(`Your account is suspended. You can log in again after ${suspensionEndDate}.`);
+        const suspensionEndDate = user.suspendedUntil.toLocaleString('en-PK', { 
+            timeZone: 'Asia/Karachi' 
+        });
+        throw new Error(`Your account is suspended until ${suspensionEndDate}`);
     }
 
     if (!user.isVerified) {
-        throw new Error('Account not verified. Please check your email for the OTP to verify your account first.');
+        throw new Error('Please verify your account first. Check your email for OTP.');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -96,16 +96,29 @@ const login = async (loginData) => {
         throw new Error('Invalid credentials - Password does not match');
     }
 
-        const token = jwt.sign(
-        { id: user.id, role: user.role },
+    const token = jwt.sign(
+        { 
+            id: user.id, 
+            role: user.role,
+            email: user.email 
+        },
         process.env.JWT_SECRET,
-        { expiresIn: '1h' } 
+        { 
+            expiresIn: '7d'  
+        }
     );
 
     const userResult = user.toJSON();
     delete userResult.passwordHash;
+    delete userResult.otp;
+    delete userResult.otpExpires;
+    delete userResult.passwordResetToken;
+    delete userResult.passwordResetExpires;
     
-    return { user: userResult, token: token };
+    return { 
+        user: userResult, 
+        token: token 
+    };
 };
 
 
