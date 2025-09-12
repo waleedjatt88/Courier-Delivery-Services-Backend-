@@ -45,47 +45,42 @@ const login = async (req, res) => {
     }
 };
 
-const verifyOtp = async (req, res) => {
+const sendOtp = async (req, res) => {
     try {
-        const { email, otp } = req.body;
-        if (!email || !otp) {
-            return res.status(400).json({ message: "Email and OTP are required." });
-        }
-        if (!/^\d{4,8}$/.test(otp)) {
-            return res.status(400).json({ message: "OTP must be numeric (4-8 digits)." });
+        const { email, type } = req.body;
+        if (!email || !type) {
+            return res.status(400).json({ message: "Email and type are required." });
         }
 
-        const result = await authService.verifyOtp(email, otp);
+        if (!Object.values(authService.OtpType).includes(type)) {
+            return res.status(400).json({ message: "Invalid OTP type specified." });
+        }
+        
+        const result = await authService.sendOtp(email, type);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ message: "Error sending OTP: " + error.message });
+    }
+};
+
+const verifyOtp = async (req, res) => {
+    try {
+        const { email, otp, type } = req.body;
+        if (!email || !otp || !type) {
+            return res.status(400).json({ message: "Email, OTP, and type are required." });
+        }
+        if (!Object.values(authService.OtpType).includes(type)) {
+            return res.status(400).json({ message: "Invalid OTP type specified." });
+        }
+        if (!/^\d{6}$/.test(otp)) { 
+            return res.status(400).json({ message: "Invalid OTP format." });
+        }
+
+        const result = await authService.verifyOtp(email, otp, type);
         res.status(200).json(result);
     } catch (error) {
         res.status(400).json({ message: "Verification failed: " + error.message });
     }
-};
-
-const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
-    }
-    const result = await authService.forgotPassword(email);
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ message: "Error processing forgot password request: " + error.message });
-  }
-};
-
-const verifyPasswordResetOtp = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-    if (!email || !otp) {
-        return res.status(400).json({ message: "Email and OTP are required." });
-    }
-    const result = await authService.verifyPasswordResetOtp(email, otp);
-    res.status(200).json(result); 
-  } catch (error) {
-    res.status(400).json({ message: "OTP verification failed: " + error.message });
-  }
 };
 
 const resetPassword = async (req, res) => {
@@ -115,18 +110,7 @@ const logout = (req, res) => {
     res.status(200).json({ message: "Logout successful, token expired." });
 };
 
-const resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
-    }
-    const result = await authService.resendOtp(email);
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ message: "Error resending OTP: " + error.message });
-  }
-};
+
 
 const googleCallback = (req, res) => {
     const user = req.user;
@@ -145,16 +129,13 @@ const googleCallback = (req, res) => {
     res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
 };
 
-// Group all exports at the end
 module.exports = {
     blacklistedTokens,
     register,
     login,
-    verifyOtp,
-    forgotPassword,
-    verifyPasswordResetOtp,
     resetPassword,
     logout,
-    resendOtp,
-    googleCallback
+    googleCallback,
+    sendOtp,
+    verifyOtp
 };

@@ -1,9 +1,16 @@
+
 const db = require('../../models');
 const User = db.User;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('./notification.service.js');
 const crypto = require('crypto');
+
+const OtpType = {
+    EMAIL_VERIFICATION: 'email_verification',
+    PASSWORD_RESET: 'password_reset',
+  RESEND_OTP: 'resend_otp'  
+};
 
 const register = async (userData, createdByAdmin = false) => {
     const { fullName, email, phoneNumber, password, role } = userData;
@@ -27,39 +34,16 @@ const register = async (userData, createdByAdmin = false) => {
         }
     }
 
-     let otp = null;
-    let otpExpires = null;
-    let isUserVerified = createdByAdmin;
-
-    if (!createdByAdmin) {
-        otp = Math.floor(100000 + Math.random() * 900000).toString();
-        otpExpires = new Date(Date.now() + 1 * 60 * 1000); 
-    }
-
     const user = await User.create({
         fullName, email, phoneNumber, passwordHash,
         role: userRole,
-        isVerified: isUserVerified, 
-        otp: otp,
-        otpExpires: otpExpires
+        isVerified: createdByAdmin, 
     });
     
     if (!createdByAdmin) {
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Verify Your Email for DevGo',
-                template: 'emailVerification', 
-                data: { 
-                    fullName: user.fullName,
-                    otp: otp
-                }
-            });
-            console.log(`OTP email sent to: ${user.email}`);
-        } catch (error) {
-            console.error(`!!! Could not send OTP email to ${user.email}:`, error);
-        }
+        await sendOtp(email, OtpType.EMAIL_VERIFICATION);
     }
+
     const userResult = user.toJSON();
     delete userResult.passwordHash;
     delete userResult.otp;
@@ -122,79 +106,92 @@ const login = async (loginData) => {
 };
 
 
-const verifyOtp = async (email, otp) => {
+
+const sendOtp = async (email, type) => {
     const user = await User.findOne({ where: { email } });
     if (!user) {
-        throw new Error("User not found.");
-    }
-    if (user.otp !== otp || user.otpExpires < new Date()) {
-        throw new Error("Invalid or expired OTP.");
-    }
-
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
-    await user.save();
-
-    return { message: "Email verified successfully. You can now log in." };
-};
-
-
-const forgotPassword = async (email) => {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-        console.log(`Password reset attempt for non-existent email: ${email}`);
-        return { message: 'If a user with that email exists, an OTP has been sent.' };
+        return { message: 'If an account with that email exists, an OTP has been sent.' };
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
     user.otpExpires = new Date(Date.now() + 1 * 60 * 1000); 
-    
-    user.passwordResetToken = null;
-    user.passwordResetExpires = null;
 
     await user.save();
 
-    try {
-    await sendEmail({
-        email: user.email,
-        subject: 'Your DevGo Password Reset OTP',
-        template: 'forgotPassword', 
-        data: { 
-            otp: otp
-        }
-    });
-} catch (error) {
-    throw new Error('Email could not be sent. Please try again later.');
-}
+    let emailSubject = '';
+    let emailTemplate = '';
     
+    switch (type) {
+        case OtpType.EMAIL_VERIFICATION:
+            emailSubject = 'Verify Your Email for DevGo';
+            emailTemplate = 'emailVerification';
+            break;
+        case OtpType.RESEND_OTP: 
+            emailSubject = 'Your New DevGo OTP';
+            emailTemplate = 'resendOtp'; 
+            break;
+        case OtpType.PASSWORD_RESET:
+            emailSubject = 'Your DevGo Password Reset OTP';
+            emailTemplate = 'forgotPassword';
+            break;
+        default:
+            throw new Error('Invalid OTP type specified.');
+    }
+    
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: emailSubject,
+            template: emailTemplate, 
+            data: { 
+                fullName: user.fullName,
+                otp: otp
+            }
+        });
+    } catch (error) {
+        console.error(`Could not send OTP email to ${user.email}:`, error);
+        throw new Error('Email could not be sent. Please try again later.');
+    }
+
     return { message: 'An OTP has been sent to your email address.' };
 };
 
 
-const verifyPasswordResetOtp = async (email, otp) => {
+const verifyOtp = async (email, otp, type) => {
     const user = await User.findOne({ 
-        where: { email, otp, otpExpires: { [db.Sequelize.Op.gt]: new Date() } } 
+        where: { 
+            email, 
+            otp, 
+            otpExpires: { [db.Sequelize.Op.gt]: new Date() } 
+        } 
     });
 
     if (!user) {
         throw new Error('Invalid or expired OTP.');
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-
-    user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); 
-    
     user.otp = null;
     user.otpExpires = null;
 
-    await user.save();
+    switch (type) {
+            case OtpType.EMAIL_VERIFICATION:
+            case OtpType.RESEND_OTP:
+            user.isVerified = true;
+            await user.save();
+            return { message: "Email verified successfully. You can now log in." };
 
-    return { resetToken: resetToken };
+        case OtpType.PASSWORD_RESET:
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+            user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+            await user.save();
+            return { resetToken: resetToken };
+
+        default:
+            throw new Error('Invalid OTP type specified.');
+    }
 };
-
 
 const resetPassword = async (resetToken, newPassword) => {
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
@@ -221,41 +218,11 @@ const resetPassword = async (resetToken, newPassword) => {
     return { message: 'Password has been reset successfully.' };
 };
 
-const resendOtp = async (email) => {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-        return { message: 'If an account with that email exists, a new OTP has been sent.' };
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 1 * 60 * 1000); 
-
-    user.otp = otp;
-    user.otpExpires = otpExpires;
-    await user.save();
-try {
-    await sendEmail({
-        email: user.email,
-        subject: 'Your New DevGo OTP',
-        template: 'resendOtp', 
-        data: { 
-            fullName: user.fullName,
-            otp: otp
-        }
-    });
-} catch (error) {
-    throw new Error('Email could not be sent. Please try again.');
-}
-    
-    return { message: 'A new OTP has been sent to your email address.' };
-};
-
 module.exports = {
     register,
     login,
-    verifyOtp, 
-    forgotPassword, 
-    verifyPasswordResetOtp, 
-    resetPassword ,
-    resendOtp
+    resetPassword,
+    sendOtp,
+    verifyOtp,
+    OtpType
 };
