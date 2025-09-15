@@ -6,11 +6,9 @@ const path = require("path");
 const getUserById = async (req, res) => {
   try {
     if (req.user.role !== "admin" && req.user.id.toString() !== req.params.id) {
-      return res
-        .status(403)
-        .json({
-          message: "Forbidden: You are not authorized to view this profile.",
-        });
+      return res.status(403).json({
+        message: "Forbidden: You are not authorized to view this profile.",
+      });
     }
 
     const user = await userService.getUserById(req.params.id);
@@ -87,30 +85,34 @@ const updateMyProfile = async (req, res) => {
 };
 
 const uploadProfilePicture = async (req, res) => {
-    try {
-        const media = await userService.uploadProfilePicture(req.file, req.user.id);
-        res.status(200).json({ message: "Profile picture uploaded successfully.", data: media });
-    } catch (error) {
-        res.status(400).json({ message: "File upload failed.", error: error.message });
-    }
+  try {
+    const media = await userService.uploadProfilePicture(req.file, req.user.id);
+    res
+      .status(200)
+      .json({ message: "Profile picture uploaded successfully.", data: media });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "File upload failed.", error: error.message });
+  }
 };
 
 const getProfilePicture = async (req, res) => {
-    try {
-        const media = await userService.getProfilePicture(req.user.id);
-        res.status(200).json({ data: media });
-    } catch (error) {
-        res.status(404).json({ message: error.message });
-    }
+  try {
+    const media = await userService.getProfilePicture(req.user.id);
+    res.status(200).json({ data: media });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 const deleteProfilePicture = async (req, res) => {
-    try {
-        const result = await userService.deleteProfilePicture(req.user.id);
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+  try {
+    const result = await userService.deleteProfilePicture(req.user.id);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 module.exports = {
@@ -119,6 +121,6 @@ module.exports = {
   getMyProfile,
   updateMyProfile,
   uploadProfilePicture,
-    getProfilePicture,
-    deleteProfilePicture
+  getProfilePicture,
+  deleteProfilePicture,
 };

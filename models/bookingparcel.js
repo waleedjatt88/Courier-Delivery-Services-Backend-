@@ -13,17 +13,15 @@ module.exports = (sequelize, DataTypes) => {
         as: "Agent",
       });
 
-       BookingParcel.hasMany(models.Media, {
-        foreignKey: 'relatedId',
+      BookingParcel.hasMany(models.Media, {
+        foreignKey: "relatedId",
         constraints: false,
         scope: {
-          relatedType: 'parcel' 
+          relatedType: "parcel",
         },
-        as: 'ParcelFiles' 
+        as: "ParcelFiles",
       });
-      BookingParcel.hasMany(models.Ticket,
-         { foreignKey: 'parcelId' });
-
+      BookingParcel.hasMany(models.Ticket, { foreignKey: "parcelId" });
     }
   }
   BookingParcel.init(
@@ -40,31 +38,33 @@ module.exports = (sequelize, DataTypes) => {
       specialInstructions: DataTypes.TEXT,
       deliveryCharge: DataTypes.FLOAT,
       status: DataTypes.ENUM(
-      'unconfirmed',
-      'order_placed', 
-      'scheduled', 
-      'picked_up', 
-      'in_transit', 
-      'out_for_delivery', 
-      'delivered', 
-      'cancelled'
-    ),
-paymentMethod: {
-    type: DataTypes.ENUM('COD', 'JAZZCASH', 'STRIPE','CASH'),
-    allowNull: true 
-},      paymentStatus: DataTypes.STRING,
+        "unconfirmed",
+        "order_placed",
+        "scheduled",
+        "picked_up",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "cancelled"
+      ),
+      paymentMethod: {
+        type: DataTypes.ENUM("COD", "JAZZCASH", "STRIPE", "CASH"),
+        allowNull: true,
+      },
+      paymentStatus: DataTypes.STRING,
       pickupLat: DataTypes.FLOAT,
       pickupLng: DataTypes.FLOAT,
       deliveryLat: DataTypes.FLOAT,
       deliveryLng: DataTypes.FLOAT,
-      deliveryType: DataTypes.ENUM('scheduled', 'instant'),
-      agentAcceptanceStatus: DataTypes.ENUM('pending', 'accepted', 'rejected'),
+      deliveryType: DataTypes.ENUM("scheduled", "instant"),
+      agentAcceptanceStatus: DataTypes.ENUM("pending", "accepted", "rejected"),
       agentRejectionReason: DataTypes.TEXT,
       assignedAt: DataTypes.DATE,
       agentCommission: DataTypes.FLOAT,
-      bookingsource: DataTypes.ENUM('web', 'manual'),
-      remainingAmount: DataTypes.FLOAT
-
+      bookingsource: DataTypes.ENUM("web", "manual"),
+      remainingAmount: DataTypes.FLOAT,
+      pickupZoneId: DataTypes.INTEGER,
+      deliveryZoneId: DataTypes.INTEGER,
     },
 
     {

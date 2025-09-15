@@ -14,68 +14,70 @@ const invoiceService = require("./invoice.service.js");
  * @returns {object}
  */
 const prepareCheckout = async (parcelData, customerId) => {
-  const {
-    pickupAddress,
-    deliveryAddress,
-    packageWeight,
-    packageSize,
-    packageContent,
-    pickupSlot,
-    specialInstructions,
-    deliveryType,
-    zoneId,
-  } = parcelData;
+    const { 
+        pickupAddress, 
+        deliveryAddress, 
+        packageWeight, 
+        packageSize,
+        packageContent, 
+        pickupSlot, 
+        specialInstructions,
+        deliveryType,
+        pickupZoneId, 
+        deliveryZoneId 
+    } = parcelData;
 
-  if (!zoneId || !deliveryType) {
-    throw new Error("Zone and Delivery Type are required.");
-  }
-  if (deliveryType === "scheduled" && !pickupSlot) {
-    throw new Error("Pickup Slot is required for scheduled delivery.");
-  }
+    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
+        throw new Error("Pickup zone, Delivery zone, and Delivery Type are required.");
+    }
+    if (deliveryType === 'scheduled' && !pickupSlot) {
+        throw new Error("Pickup Slot is required for scheduled delivery.");
+    }
 
-  const pricingRule = await db.Pricing.findOne({ where: { zoneId: zoneId } });
-  if (!pricingRule) {
-    throw new Error(
-      "Pricing for the selected zone is not available. Please contact support."
-    );
-  }
+    
+    const pickupPricing = await db.Pricing.findOne({ where: { zoneId: pickupZoneId } });
+    const deliveryPricing = await db.Pricing.findOne({ where: { zoneId: deliveryZoneId } });
 
-  let totalCharge = pricingRule.baseFare;
+    if (!pickupPricing || !deliveryPricing) {
+        throw new Error("Invalid zone provided. Pricing not available.");
+    }
 
-  const weightThreshold = 5;
-  if (packageWeight > weightThreshold) {
-    const extraWeight = packageWeight - weightThreshold;
-    totalCharge += extraWeight * pricingRule.perKgCharge;
-  }
+    let totalCharge = 0;
+    if (pickupZoneId === deliveryZoneId) {
+        totalCharge = pickupPricing.baseFare;
+    } else {
+        totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
+    }
 
-  if (deliveryType === "instant") {
-    const expressFee = totalCharge * (pricingRule.expressChargePercent / 100);
-    totalCharge += expressFee;
-  }
+    const weightThreshold = 5;
+    if (packageWeight > weightThreshold) {
+        const perKgCharge = (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
+        const extraWeight = packageWeight - weightThreshold;
+        totalCharge += extraWeight * perKgCharge;
+    }
 
-  const uniquePart = uuidv4().split("-").pop().toUpperCase();
-  const trackingNumber = `PK-${uniquePart}`;
+    if (deliveryType === 'instant') {
+        const expressPercent = (pickupPricing.expressChargePercent + deliveryPricing.expressChargePercent) / 2;
+        totalCharge *= (1 + (expressPercent / 100)); 
+    }
+    const uniquePart = uuidv4().split('-').pop().toUpperCase();
+    const trackingNumber = `PK-${uniquePart}`;
 
-  const parcel = await BookingParcel.create({
-    pickupAddress,
-    deliveryAddress,
-    packageWeight,
-    packageSize,
-    packageContent,
-    pickupSlot,
-    specialInstructions,
-    deliveryType,
-    customerId: customerId,
-    trackingNumber: trackingNumber,
-    deliveryCharge: Math.round(totalCharge),
-    status: "unconfirmed",
-    paymentStatus: "pending",
-    zoneId: zoneId,
-  });
-  return {
-    parcelId: parcel.id,
-    totalCharges: parcel.deliveryCharge,
-  };
+    const parcel = await BookingParcel.create({
+        pickupAddress, deliveryAddress, packageWeight, packageSize,
+        packageContent, pickupSlot, specialInstructions, deliveryType,
+        pickupZoneId: pickupZoneId,     
+        deliveryZoneId: deliveryZoneId,
+        customerId: customerId,
+        trackingNumber: trackingNumber,
+        deliveryCharge: Math.round(totalCharge), 
+        status: 'unconfirmed', 
+        paymentStatus: 'pending'
+    });
+    return { 
+        parcelId: parcel.id, 
+        totalCharges: parcel.deliveryCharge 
+    };
 };
 const confirmCodBooking = async (parcelId, customerId) => {
   let parcel = await BookingParcel.findOne({

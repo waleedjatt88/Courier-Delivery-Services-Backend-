@@ -70,7 +70,7 @@ module.exports = {
             };
           }
 
-          const index = allZones.indexOf(z) % (basePricingData.length - 1); // -1 to exclude the last item
+          const index = allZones.indexOf(z) % (basePricingData.length - 1); 
           return {
             zoneId: z.id,
             ...basePricingData[index],
