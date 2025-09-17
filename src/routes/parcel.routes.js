@@ -5,8 +5,11 @@ const { verifyToken } = require('../middleware/auth.middleware.js');
 
 
 router.post('/prepareCheckout', verifyToken, parcelController.prepareCheckout);
+router.patch('/:id/cancel', verifyToken, parcelController.cancelParcel);
+
 
 router.get('/my', verifyToken, parcelController.getMyParcels);
+
 
 router.get('/:id/files', verifyToken, parcelController.getParcelFiles);
 

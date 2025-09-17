@@ -79,10 +79,35 @@ const getParcelFiles = async (req, res) => {
     }
 };
 
+const cancelParcel = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+    const parcelId = req.params.id; 
+
+    const cancelledParcel = await parcelService.cancelParcelByUser(parcelId, customerId);
+
+    res.status(200).json({
+      message: "Parcel has been successfully cancelled.",
+      parcel: cancelledParcel,
+    });
+  } catch (error) {
+    if (error.message.includes("not found") || error.message.includes("not authorized")) {
+      return res.status(404).json({ message: error.message });
+    }
+     if (error.message.includes("cannot be cancelled")) {
+      return res.status(400).json({ message: error.message });
+    }
+    console.error("Error cancelling parcel:", error);
+    res.status(500).json({ message: "Failed to cancel parcel.", error: error.message });
+  }
+};
+
+
 
 module.exports = {
   prepareCheckout,
   confirmCodBooking,
   getMyParcels, 
-  getParcelFiles
+  getParcelFiles,
+  cancelParcel,
 };

@@ -18,21 +18,39 @@ const prepareManualCheckout = async (customerData, parcelData) => {
         });
     }
 
-    const pricingRule = await Pricing.findOne({ where: { zoneId: parcelData.zoneId } });
-    if (!pricingRule) throw new Error("Pricing for the selected zone is not available.");
+    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
+            throw new Error("Pickup zone, Delivery zone, and Delivery Type are required.");
+        }
+        if (deliveryType === 'scheduled' && !pickupSlot) {
+            throw new Error("Pickup Slot is required for scheduled delivery.");
+        }
     
-     let totalCharge = pricingRule.baseFare; 
-
-    const weightThreshold = 5; 
-    if (parcelData.packageWeight > weightThreshold) {
-        const extraWeight = parcelData.packageWeight - weightThreshold;
-        totalCharge += extraWeight * pricingRule.perKgCharge;
-    }
-
-    if (parcelData.deliveryType === 'instant') {
-        const expressFee = totalCharge * (pricingRule.expressChargePercent / 100);
-        totalCharge += expressFee;
-    }
+        
+        const pickupPricing = await db.Pricing.findOne({ where: { zoneId: pickupZoneId } });
+        const deliveryPricing = await db.Pricing.findOne({ where: { zoneId: deliveryZoneId } });
+    
+        if (!pickupPricing || !deliveryPricing) {
+            throw new Error("Invalid zone provided. Pricing not available.");
+        }
+    
+        let totalCharge = 0;
+        if (pickupZoneId === deliveryZoneId) {
+            totalCharge = pickupPricing.baseFare;
+        } else {
+            totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
+        }
+    
+        const weightThreshold = 5;
+        if (packageWeight > weightThreshold) {
+            const perKgCharge = (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
+            const extraWeight = packageWeight - weightThreshold;
+            totalCharge += extraWeight * perKgCharge;
+        }
+    
+        if (deliveryType === 'instant') {
+            const expressPercent = (pickupPricing.expressChargePercent + deliveryPricing.expressChargePercent) / 2;
+            totalCharge *= (1 + (expressPercent / 100)); 
+        }
 
     const trackingNumber = `PK-${uuidv4().split('-').pop().toUpperCase()}`;
     const parcel = await BookingParcel.create({

@@ -119,7 +119,8 @@ const googleCallback = (req, res) => {
         { 
             id: user.id, 
             role: user.role ,
-            email: user.email
+            email: user.email,
+            fullName: user.fullName
 
         },
         process.env.JWT_SECRET,

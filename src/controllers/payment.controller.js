@@ -24,7 +24,7 @@ const createCheckoutSession = async (req, res) => {
 };
 
 const stripeWebhook = (req, res) => {
-    console.log("--- 1. Webhook request received! ---"); // Checkpoint 1
+    console.log("--- 1. Webhook request received! ---");
 
     const signature = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -33,7 +33,7 @@ const stripeWebhook = (req, res) => {
 
     try {
         event = stripe.webhooks.constructEvent(req.body, signature, endpointSecret);
-        console.log("--- 2. Webhook signature VERIFIED! ---"); // Checkpoint 2
+        console.log("--- 2. Webhook signature VERIFIED! ---"); 
     } catch (err) {
         console.error(`!!! Webhook signature verification failed:`, err.message);
         return res.sendStatus(400);
@@ -43,12 +43,12 @@ const stripeWebhook = (req, res) => {
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        console.log('--- 3. Event is checkout.session.completed. Calling service... ---'); // Checkpoint 3
+        console.log('--- 3. Event is checkout.session.completed. Calling service... ---'); 
         console.log('Session Metadata:', session.metadata); 
 
         
         paymentService.handleSuccessfulPayment(session)
-            .then(() => console.log("--- 4. Service finished successfully. ---")) // Checkpoint 4
+            .then(() => console.log("--- 4. Service finished successfully. ---")) 
             .catch(err => console.error("!!! ERROR inside handleSuccessfulPayment service:", err));
     }
 

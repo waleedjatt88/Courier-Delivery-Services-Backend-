@@ -518,6 +518,35 @@ const confirmCodPaymentByAdmin = async (parcelId) => {
   return parcel;
 };
 
+/**
+ * 
+ * @param {number} parcelId 
+ * @param {number} customerId 
+ * @returns {Promise<object>} 
+ */
+const cancelParcelByUser = async (parcelId, customerId) => {
+  const parcel = await db.BookingParcel.findOne({
+    where: {
+      id: parcelId,
+      customerId: customerId,
+    },
+  });
+
+  if (!parcel) {
+    throw new Error("Parcel not found or you are not authorized to cancel it.");
+  }
+  if (parcel.status !== 'unconfirmed') {
+    throw new Error("This parcel cannot be cancelled as it has already been confirmed or processed.");
+  }
+
+  parcel.status = "cancelled";
+  parcel.paymentStatus = "cancelled"; 
+  await parcel.save();
+
+  return parcel;
+};
+
+
 module.exports = {
   prepareCheckout,
   confirmCodBooking,
@@ -533,4 +562,6 @@ module.exports = {
   acceptJobByAgent,
   rejectJobByAgent,
   confirmCodPaymentByAdmin,
+  cancelParcelByUser,
+
 };
