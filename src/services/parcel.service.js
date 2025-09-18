@@ -6,6 +6,7 @@ const axios = require("axios");
 const { BookingParcel, User, Media } = db;
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
+const { Op } = require("sequelize");
 
 /**
  *
@@ -170,6 +171,10 @@ const getMyParcels = async (customerId) => {
   const parcels = await db.BookingParcel.findAll({
     where: {
       customerId: customerId,
+      
+      status: {
+        [Op.notIn]: [   "unconfirmed", "cancelled"],
+      },
     },
     order: [["createdAt", "DESC"]],
   });

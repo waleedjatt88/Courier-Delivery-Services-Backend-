@@ -7,10 +7,7 @@ const { verifyToken } = require('../middleware/auth.middleware.js');
 
 router.post('/create-checkout-session', verifyToken, paymentController.createCheckoutSession);
 
-router.post(
-  '/webhook',
-  express.raw({ type: 'application/json' }),
-  paymentController.stripeWebhook
+router.post( '/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook
 );
 
 // For testing webhook locally with Stripe CLI

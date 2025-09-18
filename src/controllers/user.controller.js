@@ -65,14 +65,14 @@ const getMyProfile = async (req, res) => {
 const updateMyProfile = async (req, res) => {
   try {
     const userIdFromToken = req.user.id;
-    if (req.body.role) { // Admin ke alawa koi role change na kar sake
+    if (req.body.role) { 
       delete req.body.role;
     }
 
     const updatedUser = await userService.updateUser(
         userIdFromToken, 
         req.body, 
-        req.file // Nayi file yahan se jaayegi
+        req.file 
     );
 
     res.status(200).json({
