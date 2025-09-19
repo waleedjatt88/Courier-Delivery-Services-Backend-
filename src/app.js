@@ -94,9 +94,10 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, () => {
   autoRejectJob.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
-  console.log(`Accessible on your network at: http://192.168.100.238:${PORT}`);
+  // Ab yeh line kaam nahi karegi, isko hata sakte hain ya comment kar sakte hain
+  // console.log(`Accessible on your network at: http://192.168.100.238:${PORT}`); 
 });

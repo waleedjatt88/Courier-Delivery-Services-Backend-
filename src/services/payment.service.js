@@ -37,8 +37,8 @@ const createCheckoutSession = async (parcelId, customerId) => {
         payment_method_types: ['card'],
         line_items: line_items,
         mode: 'payment',
-        success_url: `http://localhost:5173/payment-success?parcel_id=${parcel.id}`,
-        cancel_url: `http://localhost:5173/payment-failed?parcel_id=${parcel.id}`,
+    success_url: `http://localhost:3000/customer/payment?status=success&parcel_id=${parcel.id}`,
+    cancel_url: `http://localhost:3000/customer/payment?status=failed&parcel_id=${parcel.id}`,
         metadata: { 
             parcelId: parcel.id,
             customerId: customerId

@@ -132,6 +132,7 @@ const googleCallback = (req, res) => {
     res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
 };
 
+
 module.exports = {
     blacklistedTokens,
     register,

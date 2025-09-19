@@ -20,8 +20,7 @@ router.post('/logout', verifyToken, authController.logout);
 
 
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-router.get('/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login-failed', session: false }),
+router.get('/google/callback',  passport.authenticate('google', { failureRedirect: '/login-failed', session: false }),
     authController.googleCallback 
 );
 

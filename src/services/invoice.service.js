@@ -71,7 +71,6 @@ doc.text(
 );
 
 
-    // Footer
     doc.moveDown(2);
     doc.fillColor('black').fontSize(10).text('Thank you for your business!', 50, 750, { align: 'center', lineBreak: false });
 
