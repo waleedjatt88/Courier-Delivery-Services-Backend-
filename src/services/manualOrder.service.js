@@ -1,6 +1,6 @@
 
 const db = require('../../models');
-const { User, BookingParcel, Pricing, Media } = db;
+const { User, BookingParcel, Pricing, Media, Zone } = db; 
 const { v4: uuidv4 } = require('uuid');
 const sendEmail = require('./notification.service.js');
 const invoiceService = require('./invoice.service.js');
@@ -17,6 +17,13 @@ const prepareManualCheckout = async (customerData, parcelData) => {
             passwordHash: 'not_applicable'
         });
     }
+     const { 
+        packageWeight, 
+        deliveryType, 
+        pickupZoneId, 
+        deliveryZoneId, 
+        pickupSlot 
+    } = parcelData;
 
     if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
             throw new Error("Pickup zone, Delivery zone, and Delivery Type are required.");
@@ -69,17 +76,25 @@ const prepareManualCheckout = async (customerData, parcelData) => {
 
 
 const confirmPayNow = async (parcelId) => {
+    const parcel = await BookingParcel.findOne({ 
+        where: { id: parcelId, status: 'unconfirmed' }, 
+        include: [
+            { model: User, as: 'Customer' }, 
+            { model: Zone, as: 'PickupZone', attributes: ['name'] },
+            { model: Zone, as: 'DeliveryZone', attributes: ['name'] }
+        ] 
+    });
     try {
-        const parcel = await BookingParcel.findOne({ where: { id: parcelId, status: 'unconfirmed' }, include: ['Customer'] });
-        if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
+
+    if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
 
         parcel.paymentMethod = 'CASH';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed';
         await parcel.save();
 
-        const invoiceUrl = invoiceService.generateInvoice(parcel, parcel.Customer);
-        await Media.create({ url: invoiceUrl, mediaType: 'PARCEL_INVOICE', relatedId: parcel.id, relatedType: 'parcel' });
+      const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
+        await Media.create({ url: invoiceUrl, mediaType: 'BOOKING_INVOICE', relatedId: parcel.id, relatedType: 'parcel' });
         
         await sendEmail({
             email: parcel.Customer.email,  

@@ -1,5 +1,6 @@
 const parcelService = require("../services/parcel.service.js");
-
+const fs = require('fs');
+const path = require('path');
 
 const prepareCheckout = async (req, res) => {
   try {
@@ -102,6 +103,32 @@ const cancelParcel = async (req, res) => {
   }
 };
 
+const getInvoice = async (req, res) => {
+  try {
+    const parcelId = req.params.id;
+    const user = req.user; 
+
+    const relativePath = await parcelService.getInvoicePathForUser(parcelId, user);
+
+    const fullPath = path.join(__dirname, '../../public', relativePath);
+
+    if (fs.existsSync(fullPath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="invoice-${parcelId}.pdf"`);
+
+      const fileStream = fs.createReadStream(fullPath);
+      fileStream.pipe(res);
+    } else {
+      res.status(404).json({ message: 'Invoice file not found on server.' });
+    }
+  } catch (error) {
+    if (error.message.includes("not found") || error.message.includes("not authorized")) {
+        return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Failed to retrieve invoice.', error: error.message });
+  }
+};
+
 
 
 module.exports = {
@@ -110,4 +137,5 @@ module.exports = {
   getMyParcels, 
   getParcelFiles,
   cancelParcel,
+  getInvoice,
 };

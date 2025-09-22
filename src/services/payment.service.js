@@ -56,7 +56,19 @@ const handleSuccessfulPayment = async (session) => {
     const customerId = session.metadata.customerId;
     
     const parcel = await db.BookingParcel.findOne({ 
-        where: { id: parcelId, status: 'unconfirmed' } 
+        where: { id: parcelId, status: 'unconfirmed' },
+        include: [
+            {
+                model: db.Zone,
+                as: 'PickupZone', 
+                attributes: ['name'] 
+            },
+            {
+                model: db.Zone,
+                as: 'DeliveryZone', 
+                attributes: ['name']
+            }
+        ]
     });
 
     if (parcel) {
@@ -75,11 +87,12 @@ const handleSuccessfulPayment = async (session) => {
             }
 
             if (customer) {
-                const invoiceUrl = invoiceService.generateInvoice(parcel, customer);
+                
+    const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
                 
                 await db.Media.create({
                     url: invoiceUrl,
-                    mediaType: 'PARCEL_INVOICE',
+                    mediaType: 'BOOKING_INVOICE', 
                     relatedId: parcelId,
                     relatedType: 'parcel'
                 });

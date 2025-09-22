@@ -9,9 +9,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./:/app          
-      - /app/node_modules 
-      - ./public:/app/public
+      - ./:/app         
+      - /app/node_modules  
     depends_on:
       db:
         condition: service_healthy
@@ -27,7 +26,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data  
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s

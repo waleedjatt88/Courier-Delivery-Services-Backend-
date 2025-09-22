@@ -3,7 +3,7 @@
 const db = require("../../models");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const { BookingParcel, User, Media } = db;
+const { User, BookingParcel, Pricing, Media, Zone } = db; 
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
 const { Op } = require("sequelize");
@@ -83,6 +83,19 @@ const prepareCheckout = async (parcelData, customerId) => {
 const confirmCodBooking = async (parcelId, customerId) => {
   let parcel = await BookingParcel.findOne({
     where: { id: parcelId, customerId: customerId },
+    include: [
+        {
+            model: db.Zone,
+            as: 'PickupZone',
+            attributes: ['name']
+        },
+        {
+            model: db.Zone,
+            as: 'DeliveryZone',
+            attributes: ['name']
+        }
+    ]
+
   });
   if (!parcel || parcel.status !== "unconfirmed") {
     throw new Error("Invalid parcel or parcel has already been processed.");
@@ -131,10 +144,10 @@ const confirmCodBooking = async (parcelId, customerId) => {
   try {
     const customer = await User.findByPk(customerId);
     if (customer) {
-      const invoiceUrl = invoiceService.generateInvoice(parcel, customer);
+      const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
       await Media.create({
         url: invoiceUrl,
-        mediaType: "PARCEL_INVOICE",
+        mediaType: 'BOOKING_INVOICE', 
         relatedId: parcel.id,
         relatedType: "parcel",
       });
@@ -311,6 +324,7 @@ const getParcelFiles = async (parcelId, customerId) => {
   return files;
 };
 
+
 const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
   const parcel = await db.BookingParcel.findOne({
     where: { id: parcelId, agentId },
@@ -331,6 +345,7 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
   if (parcel.status === "delivered") {
     throw new Error("Parcel already delivered. Status cannot be changed.");
   }
+
   const currentIndex = agentAllowedStatuses.indexOf(parcel.status);
   const newIndex = agentAllowedStatuses.indexOf(newStatus);
 
@@ -341,9 +356,10 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
       )}`
     );
   }
+
   if (newStatus === "delivered" && !parcel.agentCommission) {
     if (parcel.paymentMethod !== "COD") {
-      let commissionRate = 10.0; 
+      let commissionRate = 10.0;
 
       const globalZone = await db.Zone.findOne({
         where: { name: "GLOBAL_SETTINGS" },
@@ -359,21 +375,60 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
         }
       }
 
-      const calculatedCommission = parcel.deliveryCharge * (commissionRate / 100);
-      const calculatedRemaining = parcel.deliveryCharge - calculatedCommission;
+      const calculatedCommission =
+        parcel.deliveryCharge * (commissionRate / 100);
+      const calculatedRemaining =
+        parcel.deliveryCharge - calculatedCommission;
 
       parcel.agentCommission = Math.round(calculatedCommission);
       parcel.remainingAmount = Math.round(calculatedRemaining);
+    }
+
+    try {
+      const customer = await parcel.getCustomer();
+
+      const parcelWithZones = await db.BookingParcel.findByPk(parcel.id, {
+        include: [
+          { model: db.Zone, as: "PickupZone", attributes: ["name"] },
+          { model: db.Zone, as: "DeliveryZone", attributes: ["name"] },
+        ],
+      });
+
+      if (customer && parcelWithZones) {
+        const deliveryInvoiceUrl =
+          invoiceService.generateDeliveryInvoice(parcelWithZones, customer);
+
+        await db.Media.create({
+          url: deliveryInvoiceUrl,
+          mediaType: "DELIVERY_INVOICE",
+          relatedId: parcel.id,
+          relatedType: "parcel",
+        });
+
+        console.log(
+          `✅ Delivery invoice created for delivered parcel ${parcel.id}`
+        );
+      }
+    } catch (err) {
+      console.error(
+        `!!! Failed to create delivery invoice for parcel ${parcel.id}:`,
+        err
+      );
     }
   }
 
   parcel.status = newStatus;
   await parcel.save();
+
   return {
     id: parcel.id,
     status: parcel.status,
   };
 };
+
+
+
+
 const getGlobalCommissionRate = async () => {
   let commissionRate = 10.0; 
 
@@ -551,6 +606,40 @@ const cancelParcelByUser = async (parcelId, customerId) => {
   return parcel;
 };
 
+/**
+ * 
+ * @param {number} parcelId 
+ * @param {object} user 
+ * @returns {Promise<string>} 
+ */
+const getInvoicePathForUser = async (parcelId, user) => {
+  const parcel = await db.BookingParcel.findByPk(parcelId);
+
+  if (!parcel) {
+    throw new Error('Parcel not found.');
+  }
+
+  
+  if (user.role !== 'admin' && parcel.customerId !== user.id) {
+    throw new Error('You are not authorized to view this invoice.');
+  }
+
+  const invoiceMedia = await db.Media.findOne({
+    where: {
+      relatedId: parcelId,
+      relatedType: 'parcel',
+      mediaType: 'PARCEL_INVOICE',
+    },
+  });
+
+  if (!invoiceMedia || !invoiceMedia.url) {
+    throw new Error('An invoice for this parcel does not exist.');
+  }
+
+  return invoiceMedia.url;
+};
+
+
 
 module.exports = {
   prepareCheckout,
@@ -568,5 +657,6 @@ module.exports = {
   rejectJobByAgent,
   confirmCodPaymentByAdmin,
   cancelParcelByUser,
+  getInvoicePathForUser,
 
 };

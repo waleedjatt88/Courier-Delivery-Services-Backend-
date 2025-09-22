@@ -12,6 +12,8 @@ router.get('/my', verifyToken, parcelController.getMyParcels);
 
 
 router.get('/:id/files', verifyToken, parcelController.getParcelFiles);
+router.get('/:id/invoice', verifyToken, parcelController.getInvoice);
+
 
 router.patch('/:id/confirm-cod', verifyToken, parcelController.confirmCodBooking);
 

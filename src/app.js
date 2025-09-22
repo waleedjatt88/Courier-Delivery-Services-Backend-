@@ -10,7 +10,6 @@ const http = require('http');
 const { Server } = require("socket.io");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const redisClient = require("./config/redis-client.js"); 
-const passport = require("passport");
 
 //(Routes, Controllers)
 const authRoutes = require("./routes/auth.routes.js");
@@ -25,7 +24,6 @@ const paymentController = require("./controllers/payment.controller.js");
 const publicRoutes = require('./routes/public.routes.js');
 const { autoRejectJob } = require('./scheduler.js');
 const initializeSocket = require('./socket-handler.js');
-require("./config/passport-setup.js"); 
 
 // SERVER & SOCKET.IO SETUP
 const app = express();
@@ -71,8 +69,6 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), pay
 //global middlewares
 app.use(express.json()); 
 app.use(cookieParser());
-app.use(passport.initialize());
-
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 //API ROUTES

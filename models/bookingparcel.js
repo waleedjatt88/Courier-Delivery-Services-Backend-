@@ -13,6 +13,16 @@ module.exports = (sequelize, DataTypes) => {
         as: "Agent",
       });
 
+       BookingParcel.belongsTo(models.Zone, {
+        foreignKey: 'pickupZoneId',
+        as: 'PickupZone' 
+      });
+
+      BookingParcel.belongsTo(models.Zone, {
+        foreignKey: 'deliveryZoneId',
+        as: 'DeliveryZone' 
+      });
+
       BookingParcel.hasMany(models.Media, {
         foreignKey: "relatedId",
         constraints: false,
