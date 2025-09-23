@@ -6,6 +6,8 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { User } = require("../../models");
 const blacklistedTokens = new Set();
 
+
+
 const register = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
@@ -17,15 +19,17 @@ const register = async (req, res) => {
             "Phone number must be numeric and exactly 11 digits (e.g. 03XXXXXXXXX).",
         });
     }
-
     const createdByAdmin = req.user && req.user.role === "admin";
     const user = await authService.register(req.body, createdByAdmin);
-    res
-      .status(201)
-      .json({
-        message: "User registered! Please check your email for OTP.",
-        user,
-      });
+        const message = createdByAdmin
+      ? "User created successfully."
+      : "User registered! Please check your email for OTP.";
+
+    res.status(201).json({
+      message: message, 
+      user: user,      
+    });
+
   } catch (error) {
     res.status(400).json({ message: "Registration failed: " + error.message });
   }

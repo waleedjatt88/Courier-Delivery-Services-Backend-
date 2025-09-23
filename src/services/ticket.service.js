@@ -1,22 +1,38 @@
 
 const db = require('../../models');
-const { Ticket } = db; 
+const { Ticket, BookingParcel } = db; 
 
 
 const createTicket = async (ticketData, customerId) => {
+    const { subject, description, trackingNumber } = ticketData;
 
-    const { subject, description, parcelId } = ticketData;
     if (!subject || !description) {
         throw new Error("Subject and description are required.");
     }
 
-    
+    let parcelId = null; 
+
+    if (trackingNumber && trackingNumber.trim() !== '') {
+        const parcel = await BookingParcel.findOne({
+            where: {
+                trackingNumber: trackingNumber,
+                customerId: customerId 
+            }
+        });
+
+        if (!parcel) {
+            throw new Error(`Invalid Tracking ID or this parcel does not belong to you.`);
+        }
+
+        parcelId = parcel.id;
+    }
+
     const newTicket = await Ticket.create({
         subject: subject,
         description: description,
-        parcelId: parcelId || null,
-        customerId: customerId, 
-        status: 'open' 
+        parcelId: parcelId, 
+        customerId: customerId,
+        status: 'open'
     });
 
     return newTicket;
