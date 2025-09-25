@@ -3,10 +3,10 @@
 const db = require("../../models");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const { User, BookingParcel, Pricing, Media, Zone } = db; 
+const { User, BookingParcel, Pricing, Media, Zone } = db;
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
 /**
  *
@@ -15,87 +15,101 @@ const { Op } = require("sequelize");
  * @returns {object}
  */
 const prepareCheckout = async (parcelData, customerId) => {
-    const { 
-        pickupAddress, 
-        deliveryAddress, 
-        packageWeight, 
-        packageSize,
-        packageContent, 
-        pickupSlot, 
-        specialInstructions,
-        deliveryType,
-        pickupZoneId, 
-        deliveryZoneId 
-    } = parcelData;
+  const {
+    pickupAddress,
+    deliveryAddress,
+    packageWeight,
+    packageSize,
+    packageContent,
+    pickupSlot,
+    specialInstructions,
+    deliveryType,
+    pickupZoneId,
+    deliveryZoneId,
+  } = parcelData;
 
-    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
-        throw new Error("Pickup zone, Delivery zone, and Delivery Type are required.");
-    }
-    if (deliveryType === 'scheduled' && !pickupSlot) {
-        throw new Error("Pickup Slot is required for scheduled delivery.");
-    }
+  if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
+    throw new Error(
+      "Pickup zone, Delivery zone, and Delivery Type are required."
+    );
+  }
+  if (deliveryType === "scheduled" && !pickupSlot) {
+    throw new Error("Pickup Slot is required for scheduled delivery.");
+  }
 
-    
-    const pickupPricing = await db.Pricing.findOne({ where: { zoneId: pickupZoneId } });
-    const deliveryPricing = await db.Pricing.findOne({ where: { zoneId: deliveryZoneId } });
+  const pickupPricing = await db.Pricing.findOne({
+    where: { zoneId: pickupZoneId },
+  });
+  const deliveryPricing = await db.Pricing.findOne({
+    where: { zoneId: deliveryZoneId },
+  });
 
-    if (!pickupPricing || !deliveryPricing) {
-        throw new Error("Invalid zone provided. Pricing not available.");
-    }
+  if (!pickupPricing || !deliveryPricing) {
+    throw new Error("Invalid zone provided. Pricing not available.");
+  }
 
-    let totalCharge = 0;
-    if (pickupZoneId === deliveryZoneId) {
-        totalCharge = pickupPricing.baseFare;
-    } else {
-        totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
-    }
+  let totalCharge = 0;
+  if (pickupZoneId === deliveryZoneId) {
+    totalCharge = pickupPricing.baseFare;
+  } else {
+    totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
+  }
 
-    const weightThreshold = 5;
-    if (packageWeight > weightThreshold) {
-        const perKgCharge = (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
-        const extraWeight = packageWeight - weightThreshold;
-        totalCharge += extraWeight * perKgCharge;
-    }
+  const weightThreshold = 5;
+  if (packageWeight > weightThreshold) {
+    const perKgCharge =
+      (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
+    const extraWeight = packageWeight - weightThreshold;
+    totalCharge += extraWeight * perKgCharge;
+  }
 
-    if (deliveryType === 'instant') {
-        const expressPercent = (pickupPricing.expressChargePercent + deliveryPricing.expressChargePercent) / 2;
-        totalCharge *= (1 + (expressPercent / 100)); 
-    }
-    const uniquePart = uuidv4().split('-').pop().toUpperCase();
-    const trackingNumber = `PK-${uniquePart}`;
+  if (deliveryType === "instant") {
+    const expressPercent =
+      (pickupPricing.expressChargePercent +
+        deliveryPricing.expressChargePercent) /
+      2;
+    totalCharge *= 1 + expressPercent / 100;
+  }
+  const uniquePart = uuidv4().split("-").pop().toUpperCase();
+  const trackingNumber = `PK-${uniquePart}`;
 
-    const parcel = await BookingParcel.create({
-        pickupAddress, deliveryAddress, packageWeight, packageSize,
-        packageContent, pickupSlot, specialInstructions, deliveryType,
-        pickupZoneId: pickupZoneId,     
-        deliveryZoneId: deliveryZoneId,
-        customerId: customerId,
-        trackingNumber: trackingNumber,
-        deliveryCharge: Math.round(totalCharge), 
-        status: 'unconfirmed', 
-        paymentStatus: 'pending'
-    });
-    return { 
-        parcelId: parcel.id, 
-        totalCharges: parcel.deliveryCharge 
-    };
+  const parcel = await BookingParcel.create({
+    pickupAddress,
+    deliveryAddress,
+    packageWeight,
+    packageSize,
+    packageContent,
+    pickupSlot,
+    specialInstructions,
+    deliveryType,
+    pickupZoneId: pickupZoneId,
+    deliveryZoneId: deliveryZoneId,
+    customerId: customerId,
+    trackingNumber: trackingNumber,
+    deliveryCharge: Math.round(totalCharge),
+    status: "unconfirmed",
+    paymentStatus: "pending",
+  });
+  return {
+    parcelId: parcel.id,
+    totalCharges: parcel.deliveryCharge,
+  };
 };
 const confirmCodBooking = async (parcelId, customerId) => {
   let parcel = await BookingParcel.findOne({
     where: { id: parcelId, customerId: customerId },
     include: [
-        {
-            model: db.Zone,
-            as: 'PickupZone',
-            attributes: ['name']
-        },
-        {
-            model: db.Zone,
-            as: 'DeliveryZone',
-            attributes: ['name']
-        }
-    ]
-
+      {
+        model: db.Zone,
+        as: "PickupZone",
+        attributes: ["name"],
+      },
+      {
+        model: db.Zone,
+        as: "DeliveryZone",
+        attributes: ["name"],
+      },
+    ],
   });
   if (!parcel || parcel.status !== "unconfirmed") {
     throw new Error("Invalid parcel or parcel has already been processed.");
@@ -144,10 +158,13 @@ const confirmCodBooking = async (parcelId, customerId) => {
   try {
     const customer = await User.findByPk(customerId);
     if (customer) {
-      const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
+      const invoiceUrl = invoiceService.generateBookingInvoice(
+        parcel,
+        customer
+      );
       await Media.create({
         url: invoiceUrl,
-        mediaType: 'BOOKING_INVOICE', 
+        mediaType: "BOOKING_INVOICE",
         relatedId: parcel.id,
         relatedType: "parcel",
       });
@@ -184,9 +201,9 @@ const getMyParcels = async (customerId) => {
   const parcels = await db.BookingParcel.findAll({
     where: {
       customerId: customerId,
-      
+
       status: {
-        [Op.notIn]: [   "unconfirmed", "cancelled"],
+        [Op.notIn]: ["unconfirmed", "cancelled"],
       },
     },
     order: [["createdAt", "DESC"]],
@@ -194,20 +211,38 @@ const getMyParcels = async (customerId) => {
   return parcels;
 };
 
-/**
- *
- * @returns {Array}
- */
-const getAllParcels = async () => {
-  const parcels = await db.BookingParcel.findAll({
-    order: [["createdAt", "DESC"]],
-    include: {
-      model: db.User,
-      as: "Customer",
-      attributes: ["id", "fullName", "email"],
-    },
-  });
-  return parcels;
+const getAllParcels = async (filterType = null) => {
+    const queryOptions = {
+        order: [['createdAt', 'DESC']],
+        include: {
+            model: db.User,
+            as: 'Customer',
+            attributes: ['id', 'fullName', 'email'],
+        }
+    };
+    const whereClause = {};
+    switch (filterType) {
+        case 'active':
+            whereClause.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
+            break;
+        case 'scheduled':
+            whereClause.status = 'scheduled';
+            break;
+        case 'order_placed':
+            whereClause.status = 'order_placed';
+            break;
+        case 'cancelled':
+            whereClause.status = 'cancelled';
+            whereClause.paymentStatus = { [Op.in]: ['pending', 'completed'] };
+            break;
+        default:
+            break;
+    }
+    if (Object.keys(whereClause).length > 0) {
+        queryOptions.where = whereClause;
+    }
+    const parcels = await db.BookingParcel.findAll(queryOptions);
+    return parcels;
 };
 
 /**
@@ -324,11 +359,16 @@ const getParcelFiles = async (parcelId, customerId) => {
   return files;
 };
 
-
 const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
   const parcel = await db.BookingParcel.findOne({
     where: { id: parcelId, agentId },
+    include: [
+      { model: db.Zone, as: "PickupZone", attributes: ["name"] },
+      { model: db.Zone, as: "DeliveryZone", attributes: ["name"] },
+      { model: db.User, as: "Customer" },
+    ],
   });
+
   if (!parcel) throw new Error("Parcel not found or not assigned to you.");
   if (parcel.agentAcceptanceStatus !== "accepted")
     throw new Error("You must accept the job first.");
@@ -348,55 +388,39 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
 
   const currentIndex = agentAllowedStatuses.indexOf(parcel.status);
   const newIndex = agentAllowedStatuses.indexOf(newStatus);
-
-  if (newIndex === -1 || newIndex !== currentIndex + 1) {
+  if (newIndex === -1 || (currentIndex !== -1 && newIndex < currentIndex)) {
     throw new Error(
-      `Invalid status transition. Must follow sequence: ${agentAllowedStatuses.join(
-        " -> "
-      )}`
+      `Invalid status transition from '${parcel.status}' to '${newStatus}'.`
     );
   }
+  parcel.status = newStatus;
 
-  if (newStatus === "delivered" && !parcel.agentCommission) {
-    if (parcel.paymentMethod !== "COD") {
+  if (newStatus === "delivered") {
+    if (!parcel.agentCommission && parcel.paymentMethod !== "COD") {
       let commissionRate = 10.0;
-
       const globalZone = await db.Zone.findOne({
         where: { name: "GLOBAL_SETTINGS" },
       });
-
       if (globalZone) {
         const globalPricingRule = await db.Pricing.findOne({
           where: { zoneId: globalZone.id },
         });
-
         if (globalPricingRule && globalPricingRule.agentCommissionPercent) {
           commissionRate = globalPricingRule.agentCommissionPercent;
         }
       }
-
       const calculatedCommission =
         parcel.deliveryCharge * (commissionRate / 100);
-      const calculatedRemaining =
-        parcel.deliveryCharge - calculatedCommission;
-
       parcel.agentCommission = Math.round(calculatedCommission);
-      parcel.remainingAmount = Math.round(calculatedRemaining);
+      parcel.remainingAmount = parcel.deliveryCharge - parcel.agentCommission;
     }
 
     try {
-      const customer = await parcel.getCustomer();
-
-      const parcelWithZones = await db.BookingParcel.findByPk(parcel.id, {
-        include: [
-          { model: db.Zone, as: "PickupZone", attributes: ["name"] },
-          { model: db.Zone, as: "DeliveryZone", attributes: ["name"] },
-        ],
-      });
-
-      if (customer && parcelWithZones) {
-        const deliveryInvoiceUrl =
-          invoiceService.generateDeliveryInvoice(parcelWithZones, customer);
+      if (parcel.Customer) {
+        const deliveryInvoiceUrl = invoiceService.generateDeliveryInvoice(
+          parcel,
+          parcel.Customer
+        );
 
         await db.Media.create({
           url: deliveryInvoiceUrl,
@@ -404,7 +428,6 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
           relatedId: parcel.id,
           relatedType: "parcel",
         });
-
         console.log(
           `✅ Delivery invoice created for delivered parcel ${parcel.id}`
         );
@@ -416,8 +439,6 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
       );
     }
   }
-
-  parcel.status = newStatus;
   await parcel.save();
 
   return {
@@ -426,11 +447,8 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
   };
 };
 
-
-
-
 const getGlobalCommissionRate = async () => {
-  let commissionRate = 10.0; 
+  let commissionRate = 10.0;
 
   const globalZone = await db.Zone.findOne({
     where: { name: "GLOBAL_SETTINGS" },
@@ -579,10 +597,10 @@ const confirmCodPaymentByAdmin = async (parcelId) => {
 };
 
 /**
- * 
- * @param {number} parcelId 
- * @param {number} customerId 
- * @returns {Promise<object>} 
+ *
+ * @param {number} parcelId
+ * @param {number} customerId
+ * @returns {Promise<object>}
  */
 const cancelParcelByUser = async (parcelId, customerId) => {
   const parcel = await db.BookingParcel.findOne({
@@ -595,51 +613,121 @@ const cancelParcelByUser = async (parcelId, customerId) => {
   if (!parcel) {
     throw new Error("Parcel not found or you are not authorized to cancel it.");
   }
-  if (parcel.status !== 'unconfirmed') {
-    throw new Error("This parcel cannot be cancelled as it has already been confirmed or processed.");
+  if (parcel.status !== "unconfirmed") {
+    throw new Error(
+      "This parcel cannot be cancelled as it has already been confirmed or processed."
+    );
   }
 
   parcel.status = "cancelled";
-  parcel.paymentStatus = "cancelled"; 
+  parcel.paymentStatus = "cancelled";
   await parcel.save();
 
   return parcel;
 };
 
-/**
- * 
- * @param {number} parcelId 
- * @param {object} user 
- * @returns {Promise<string>} 
- */
-const getInvoicePathForUser = async (parcelId, user) => {
+const getAllInvoicePaths = async (parcelId, user) => {
+  if (user.role !== "admin") {
+    throw new Error("You are not authorized to perform this action.");
+  }
   const parcel = await db.BookingParcel.findByPk(parcelId);
+  if (!parcel) throw new Error("Parcel not found.");
 
-  if (!parcel) {
-    throw new Error('Parcel not found.');
+  const allInvoices = await db.Media.findAll({
+    where: {
+      relatedId: parcelId,
+      relatedType: "parcel",
+      mediaType: {
+        [db.Sequelize.Op.in]: ["BOOKING_INVOICE", "DELIVERY_INVOICE"],
+      },
+    },
+    attributes: ["url", "mediaType"],
+  });
+
+  return allInvoices;
+};
+
+const getInvoicePathForUser = async (parcelId, user, invoiceType) => {
+  if (!invoiceType) {
+    throw new Error("Invoice type must be specified.");
   }
 
-  
-  if (user.role !== 'admin' && parcel.customerId !== user.id) {
-    throw new Error('You are not authorized to view this invoice.');
+  const parcel = await db.BookingParcel.findByPk(parcelId);
+  if (!parcel) throw new Error("Parcel not found.");
+
+  if (user.role !== "admin" && parcel.customerId !== user.id) {
+    throw new Error("You are not authorized to view this invoice.");
   }
 
   const invoiceMedia = await db.Media.findOne({
     where: {
       relatedId: parcelId,
-      relatedType: 'parcel',
-      mediaType: 'PARCEL_INVOICE',
+      relatedType: "parcel",
+      mediaType: invoiceType,
     },
   });
 
-  if (!invoiceMedia || !invoiceMedia.url) {
-    throw new Error('An invoice for this parcel does not exist.');
-  }
+  if (!invoiceMedia) throw new Error("The specified invoice does not exist.");
 
   return invoiceMedia.url;
 };
+/**
+ *
+ * @param {number} customerId
+ * @returns {Promise<object>}
+ */
+const getCustomerDashboardStats = async (customerId) => {
+  const relevantStatuses = [
+    "order_placed",
+    "scheduled",
+    "picked_up",
+    "in_transit",
+    "out_for_delivery",
+    "delivered",
+  ];
+  const statusCounts = await db.BookingParcel.findAll({
+    where: {
+      customerId: customerId,
+      status: {
+        [Op.in]: relevantStatuses,
+      },
+    },
+    group: ["status"],
+    attributes: [
+      "status",
+      [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+    ],
+    raw: true,
+  });
+  const stats = {
+    totalBookings: 0,
+    order_placed: 0,
+    picked_up: 0,
+    in_transit: 0,
+    out_for_delivery: 0,
+    delivered: 0,
+  };
 
+  for (const item of statusCounts) {
+    const status = item.status;
+    const count = parseInt(item.count, 10);
 
+    if (status === "scheduled") {
+      stats.order_placed += count;
+    } else if (stats.hasOwnProperty(status)) {
+      stats[status] = count;
+    }
+  }
+
+  stats.totalBookings =
+    stats.order_placed +
+    stats.picked_up +
+    stats.in_transit +
+    stats.out_for_delivery +
+    stats.delivered;
+
+  return stats;
+};
 
 module.exports = {
   prepareCheckout,
@@ -658,5 +746,6 @@ module.exports = {
   confirmCodPaymentByAdmin,
   cancelParcelByUser,
   getInvoicePathForUser,
-
+  getAllInvoicePaths,
+  getCustomerDashboardStats,
 };

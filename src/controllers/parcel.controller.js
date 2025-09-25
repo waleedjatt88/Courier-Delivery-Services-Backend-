@@ -106,9 +106,10 @@ const cancelParcel = async (req, res) => {
 const getInvoice = async (req, res) => {
   try {
     const parcelId = req.params.id;
-    const user = req.user; 
+    const user = req.user;
 
-    const relativePath = await parcelService.getInvoicePathForUser(parcelId, user);
+    const { type } = req.query;
+    const relativePath = await parcelService.getInvoicePathForUser(parcelId, user, type);
 
     const fullPath = path.join(__dirname, '../../public', relativePath);
 
@@ -122,10 +123,21 @@ const getInvoice = async (req, res) => {
       res.status(404).json({ message: 'Invoice file not found on server.' });
     }
   } catch (error) {
-    if (error.message.includes("not found") || error.message.includes("not authorized")) {
+    if (error.message.includes("not found") || error.message.includes("not authorized") || error.message.includes("must be specified")) {
         return res.status(404).json({ message: error.message });
     }
     res.status(500).json({ message: 'Failed to retrieve invoice.', error: error.message });
+  }
+};
+
+const getDashboardStats = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+    const stats = await parcelService.getCustomerDashboardStats(customerId);
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard stats." });
   }
 };
 
@@ -138,4 +150,5 @@ module.exports = {
   getParcelFiles,
   cancelParcel,
   getInvoice,
+  getDashboardStats,
 };

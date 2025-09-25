@@ -9,9 +9,10 @@ router.patch('/:id/cancel', verifyToken, parcelController.cancelParcel);
 
 
 router.get('/my', verifyToken, parcelController.getMyParcels);
+router.get('/my/dashboard-stats', verifyToken, parcelController.getDashboardStats);
 
 
-router.get('/:id/files', verifyToken, parcelController.getParcelFiles);
+// router.get('/:id/files', verifyToken, parcelController.getParcelFiles);
 router.get('/:id/invoice', verifyToken, parcelController.getInvoice);
 
 

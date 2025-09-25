@@ -108,18 +108,21 @@ const generateDeliveryInvoice = (parcel, customer) => {
     const fromToY = doc.y + 20;
     doc.fontSize(12).font('Helvetica-Bold').text('Delivered To:', 40, fromToY);
     doc.font('Helvetica').text(customer.fullName, 40, fromToY + 15);
-    doc.text(parcel.deliveryAddress, 40, fromToY + 30);
     doc.fontSize(12).font('Helvetica-Bold').text('From:', 300, fromToY);
     doc.font('Helvetica').text('DevGo Courier Service', 300, fromToY + 15);
     doc.y = fromToY + 80;
 
     const totalY = createDescriptionTable(doc, parcel); 
     
-    if (parcel.paymentStatus === 'completed') {
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('green').text('PAID', 40, totalY, { align: 'right' });
-        doc.fillColor('black').font('Helvetica').text(`Paid via: ${parcel.paymentMethod}`, 40, totalY + 15, { align: 'right' });
+      if (parcel.paymentStatus === 'completed') {
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('green').text('PAID', 40, totalY + 20, { align: 'right' });
+        doc.fillColor('black').font('Helvetica').text(`Paid via: ${parcel.paymentMethod}`, 40, totalY + 35, { align: 'right' });
+    
+    } else if (parcel.paymentMethod === 'COD') {
+        doc.fontSize(11).font('Helvetica-Bold').text(`Payment Method: COD (Cash on Delivery)`, 40, totalY + 20, { align: 'right' });
+    
     } else {
-        doc.fontSize(11).font('Helvetica-Bold').fillColor('red').text('PAYMENT PENDING', 40, totalY, { align: 'right' });
+        doc.fontSize(11).font('Helvetica-Bold').fillColor('red').text('PAYMENT PENDING', 40, totalY + 20, { align: 'right' });
     }
 
     createFooter(doc);

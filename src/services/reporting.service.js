@@ -43,7 +43,7 @@ const getDashboardStats = async (period) => {
         const totalBookings = await BookingParcel.count({ 
             where: { 
                 status: 'delivered',
-                updatedAt: { [Op.between]: [start, end] } // Changed from createdAt to updatedAt
+                updatedAt: { [Op.between]: [start, end] } 
             }
         });
 
@@ -51,7 +51,7 @@ const getDashboardStats = async (period) => {
             where: { 
                 status: 'delivered',
                 paymentStatus: 'completed',
-                updatedAt: { [Op.between]: [start, end] } // Changed from createdAt to updatedAt
+                updatedAt: { [Op.between]: [start, end] } 
             }
         });
 

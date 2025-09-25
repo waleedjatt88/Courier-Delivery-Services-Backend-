@@ -11,10 +11,13 @@ const manualOrderService = require('../services/manualOrder.service.js');
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await adminService.getAllUsers();
+    
+        const { type } = req.query;
+        const users = await adminService.getAllUsers(type);
+        
         res.status(200).json(users);
     } catch (error) {
-        res.status(500).json({ message: "Server error: " + error.message });
+        res.status(400).json({ message: error.message });
     }
 };
 
@@ -33,7 +36,8 @@ const deleteUser = async (req, res) => {
  
 const getAllParcels = async (req, res) => {
     try {
-        const parcels = await parcelService.getAllParcels();
+        const { type } = req.query;
+        const parcels = await parcelService.getAllParcels(type);
         res.status(200).json({ parcels: parcels });
     } catch (error) {
         console.error("Admin: Error fetching all parcels:", error);
@@ -116,10 +120,16 @@ const unblockUser = async (req, res) => {
 
 const suspendUser = async (req, res) => {
     try {
-        const { days } = req.body; 
-        const user = await adminService.suspendUser(req.params.id, days);
-        res.status(200).json({ message: `User ${user.fullName} has been suspended for ${days} days.`, user });
-    } catch (error) { res.status(400).json({ message: error.message }); }
+        const userId = req.params.id;
+        const user = await adminService.suspendUser(userId);
+        res.status(200).json({ 
+            message: `User ${user.fullName} has been suspended successfully for 3 days.`, 
+            user: user 
+        });
+        
+    } catch (error) { 
+        res.status(400).json({ message: error.message }); 
+    }
 };
 
 const unsuspendUser = async (req, res) => {
