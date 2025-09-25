@@ -7,6 +7,7 @@ const invoiceService = require('./invoice.service.js');
 const stripeService = require('./payment.service.js'); 
 
 
+
 const prepareManualCheckout = async (customerData, parcelData) => {
     let customer = await User.findOne({ where: { email: customerData.email } });
     if (!customer) {
@@ -93,7 +94,7 @@ const confirmPayNow = async (parcelId) => {
         parcel.status = 'order_placed';
         await parcel.save();
 
-      const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
+        const invoiceUrl = invoiceService.generateBookingInvoice(parcel, parcel.Customer);
         await Media.create({ url: invoiceUrl, mediaType: 'BOOKING_INVOICE', relatedId: parcel.id, relatedType: 'parcel' });
         
         await sendEmail({
