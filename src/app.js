@@ -82,6 +82,16 @@ app.use("/api/tickets", ticketRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api', publicRoutes);
 
+app.get('/api/test-env', (req, res) => {
+    const secretFromEnv = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    console.log("DEBUG: /api/test-env called. Secret is:", secretFromEnv);
+
+    res.status(200).json({
+        message: "This is the secret key currently inside the container's environment.",
+        stripe_webhook_secret: secretFromEnv || "!!! NOT FOUND or EMPTY !!!"
+    });
+});
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Courier Backend API is running!" });
