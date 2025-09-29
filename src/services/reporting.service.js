@@ -1,97 +1,93 @@
-const db = require('../../models');  
-const { BookingParcel, User } = db;
-const { Op } = require('sequelize');
 
-const getDateRange = (period) => {
-    const end = new Date();
-    const start = new Date();
-    
-    switch(period) {
+const db = require('../../models');
+const { BookingParcel } = db;
+const { Op, Sequelize, fn, col, literal } = require("sequelize");
+
+
+const getLastTwelveMonthsLabels = () => {
+    const labels = [];
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    for (let i = 0; i < 12; i++) {
+        d.setMonth(d.getMonth() - 1);
+        labels.push(monthNames[d.getMonth()]);
+    }
+    return labels.reverse();
+};
+
+const getLastSixYearsLabels = () => {
+    const labels = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 5; i >= 0; i--) {
+        labels.push((currentYear - i).toString());
+    }
+    return labels;
+};
+
+
+const getBookingStats = async (period) => {
+    let dateFilter, groupBy, labels, dataFormatter;
+
+    switch (period) {
         case 'daily':
-            start.setHours(0, 0, 0, 0);
+            
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+            dateFilter = { [Op.gte]: sevenDaysAgo };
+
+            groupBy = fn('EXTRACT', literal('ISODOW FROM "createdAt"'));
+            
+            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+            dataFormatter = (result) => {
+                if (!result || !result.period) return null;
+                const dayIndex = parseInt(result.period, 10) - 1; // DB (1-7) -> Array Index (0-6)
+                return labels[dayIndex];
+            };
             break;
+
         case 'monthly':
-            start.setDate(1);
-            start.setHours(0, 0, 0, 0);
+            dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
+            groupBy = fn('date_trunc', 'month', col('createdAt'));
+            labels = getLastTwelveMonthsLabels();
+            dataFormatter = (result) => new Date(result.period).toLocaleDateString('en-US', { month: 'short' });
             break;
+
         case 'yearly':
-            start.setMonth(0, 1);
-            start.setHours(0, 0, 0, 0);
+            dateFilter = { [Op.gte]: new Date(new Date().setFullYear(new Date().getFullYear() - 6)) };
+            groupBy = fn('date_trunc', 'year', col('createdAt'));
+            labels = getLastSixYearsLabels();
+            dataFormatter = (result) => new Date(result.period).getFullYear().toString();
             break;
+
         default:
-            throw new Error('Invalid period specified');
+            throw new Error("Invalid period specified. Use 'daily', 'monthly', or 'yearly'.");
     }
-    
-    return { start, end };
-};
 
-const getDashboardStats = async (period) => {
-    try {
-        const { start, end } = getDateRange(period);
-        console.log('Date range:', { start, end }); 
-
-        const deliveredParcels = await BookingParcel.findAll({ 
-            where: { 
-                status: 'delivered',
-                paymentStatus: 'completed',
-                updatedAt: { [Op.between]: [start, end] } 
-            },
-            raw: true
-        });
-        console.log('Delivered parcels:', deliveredParcels);
-
-        const totalBookings = await BookingParcel.count({ 
-            where: { 
-                status: 'delivered',
-                updatedAt: { [Op.between]: [start, end] } 
+    const results = await BookingParcel.findAll({
+        where: {
+            createdAt: dateFilter,
+            status: {
+                [Op.notIn]: ['unconfirmed', 'cancelled']
             }
-        });
-
-        const revenue = await BookingParcel.sum('deliveryCharge', { 
-            where: { 
-                status: 'delivered',
-                paymentStatus: 'completed',
-                updatedAt: { [Op.between]: [start, end] } 
-            }
-        });
-
-        return { 
-            totalBookings, 
-            totalRevenue: revenue || 0,
-            period: period
-        };
-    } catch (error) {
-        console.error('Error in getDashboardStats:', error);
-        throw error;
-    }
-};
-
-
-const getAgentPerformance = async (agentId) => {
-    const deliveredCount = await BookingParcel.count({ where: { agentId, status: 'delivered' } });
-    const totalAssigned = await BookingParcel.count({ where: { agentId } });
-    const successRate = totalAssigned > 0 ? (deliveredCount / totalAssigned) * 100 : 0;
-    
-    return { deliveredParcels: deliveredCount, successRate: successRate.toFixed(2) + '%' };
-};
-
-const getAgentEarnings = async (agentId, period) => {
-    const { start, end } = getDateRange(period); 
-    
-    const where = {
-        agentId: agentId,
-        status: 'delivered',
-        updatedAt: { [Op.between]: [start, end] } 
-    };
-
-    const totalEarnings = await db.BookingParcel.sum('agentCommission', { where });
-    const deliveredCount = await db.BookingParcel.count({ where });
+        },
+        attributes: [
+            [groupBy, 'period'],
+            [fn('COUNT', col('id')), 'totalBookings']
+        ],
+        group: ['period'],
+        raw: true
+    });
+    const dataMap = new Map(results.map(r => [dataFormatter(r), parseInt(r.totalBookings, 10)]));
+    const finalData = labels.map(label => dataMap.get(label) || 0);
 
     return {
-        period: period,
-        totalEarnings: totalEarnings || 0,
-        parcelsDelivered: deliveredCount
+        labels: labels,
+        data: finalData
     };
 };
 
-module.exports = { getDashboardStats, getAgentPerformance, getAgentEarnings };
+module.exports = {
+    getBookingStats
+};

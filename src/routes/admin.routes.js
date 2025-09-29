@@ -41,9 +41,8 @@ router.patch("/static-pages/:pageType", [verifyToken, isAdmin], staticPageContro
 router.delete("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.deleteStaticPage);
 
 
-router.get("/stats/dashboard", [verifyToken, isAdmin], adminController.getDashboardStats);
-router.get("/agents/:id/performance", [verifyToken, isAdmin], adminController.getAgentPerformance);
 router.get('/stats/agents', [verifyToken, isAdmin], adminController.getAgentStats);
+router.get('/stats/global', [verifyToken, isAdmin], adminController.getGlobalStats);
 
 
 router.post("/manual-orders/prepare", [verifyToken, isAdmin], adminController.prepareManualOrder);

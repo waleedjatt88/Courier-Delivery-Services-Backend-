@@ -207,21 +207,30 @@ const getMyParcels = async (customerId) => {
         [Op.notIn]: ["unconfirmed", "cancelled"],
       },
     },
-    order: [["createdAt", "DESC"]],
+        order: [['id', 'DESC']], 
   });
   return parcels;
 };
 
 const getAllParcels = async (filterType = null) => {
     const queryOptions = {
-        order: [['createdAt', 'DESC']],
-        include: {
-            model: db.User,
-            as: 'Customer',
-            attributes: ['id', 'fullName', 'email'],
-        }
+        order: [['id', 'DESC']], 
+        include: [
+            {
+                model: db.User,
+                as: 'Customer', 
+                attributes: ['id', 'fullName', 'email'],
+            },
+            {
+                model: db.User,
+                as: 'Agent',    
+                attributes: ['id', 'fullName'], 
+                required: false 
+            }
+        ],
     };
     const whereClause = {};
+
     switch (filterType) {
         case 'active':
             whereClause.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
@@ -332,7 +341,7 @@ const getParcelsByAgentId = async (agentId) => {
     where: {
       agentId: agentId,
     },
-    order: [["createdAt", "ASC"]],
+        order: [['id', 'DESC']], 
     include: {
       model: db.User,
       as: "Customer",

@@ -23,6 +23,8 @@ const chatRoutes = require('./routes/chat.routes.js');
 const paymentController = require("./controllers/payment.controller.js");
 const publicRoutes = require('./routes/public.routes.js');
 const { autoRejectJob } = require('./scheduler.js');
+const reportingRoutes = require("./routes/reporting.routes.js");
+
 const initializeSocket = require('./socket-handler.js');
 
 // SERVER & SOCKET.IO SETUP
@@ -81,6 +83,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api', publicRoutes);
+app.use("/api/reporting", reportingRoutes);
+
 
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Courier Backend API is running!" });

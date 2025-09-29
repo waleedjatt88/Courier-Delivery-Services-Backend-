@@ -3,7 +3,7 @@ const { Chat } = db;
 
 const initializeSocket = (io) => {
   io.on("connection", (socket) => {
-    console.log(`🔌 New client connected: ${socket.id}`);
+    console.log(`✅SUCCESS! A new client has connected: ${socket.id}`);
 
     socket.on("joinChat", (customerId) => {
       const roomName = `chat_customer_${customerId}`;

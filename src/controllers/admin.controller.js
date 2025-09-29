@@ -232,18 +232,15 @@ const cancelParcel = async (req, res) => {
     }
 };
 
-const getDashboardStats = async (req, res) => {
+const getGlobalStats = async (req, res) => {
     try {
-        const stats = await reportingService.getDashboardStats(req.query.period || 'daily');
+        const stats = await adminService.getGlobalParcelStats();
         res.status(200).json(stats);
-    } catch (error) { res.status(500).json({ message: error.message }); }
-};
+    } catch (error) {
 
-const getAgentPerformance = async (req, res) => {
-    try {
-        const performance = await reportingService.getAgentPerformance(req.params.id);
-        res.status(200).json(performance);
-    } catch (error) { res.status(500).json({ message: error.message }); }
+        console.error("Admin: Error fetching global stats:", error);
+        res.status(500).json({ message: "Failed to fetch global statistics." });
+    }
 };
 
 const prepareManualOrder = async (req, res) => {
@@ -316,12 +313,11 @@ module.exports = {
     updatePricingRule,
     cancelParcel,
     rescheduleParcel,
-    getDashboardStats,
-    getAgentPerformance,
     prepareManualOrder,
     confirmPayNowOrder,
     sendPaymentLink,
     confirmCodPayment,
-    getAgentStats
+    getAgentStats,
+    getGlobalStats
 
 };

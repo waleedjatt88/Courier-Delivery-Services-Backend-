@@ -35,7 +35,7 @@ const getAllUsers = async (roleType = null) => {
     const users = await User.findAll({
         where: whereClause,
         attributes: { exclude: ['passwordHash'] },
-        order: [['createdAt', 'DESC']]
+        order: [['id', 'DESC']], 
     });
     return users;
 };
@@ -158,6 +158,34 @@ const getAgentStats = async () => {
     };
 };
 
+/**
+ * 
+ * @returns {Promise<object>} 
+ */
+const getGlobalParcelStats = async () => {
+    const statsResult = await BookingParcel.findAll({
+        attributes: [
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status NOT IN ('unconfirmed', 'cancelled') THEN 1 ELSE 0 END")), 'totalBookings'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'order_placed' THEN 1 ELSE 0 END")), 'order_placed'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END")), 'scheduled'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'picked_up' THEN 1 ELSE 0 END")), 'picked_up'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'in_transit' THEN 1 ELSE 0 END")), 'in_transit'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'out_for_delivery' THEN 1 ELSE 0 END")), 'out_for_delivery'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'delivered' THEN 1 ELSE 0 END")), 'delivered'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'cancelled' AND \"paymentStatus\" IN ('pending', 'completed') THEN 1 ELSE 0 END")), 'cancelled']        ],
+        raw: true
+    });
+
+    const stats = statsResult[0]; 
+
+    for (const key in stats) {
+        stats[key] = parseInt(stats[key], 10) || 0;
+    }
+
+    return stats;
+};
+
+
 
 module.exports = {
     getAllUsers,
@@ -167,5 +195,6 @@ module.exports = {
     unblockUser,
     suspendUser,
     unsuspendUser,
-    getAgentStats
+    getAgentStats,
+    getGlobalParcelStats
 };

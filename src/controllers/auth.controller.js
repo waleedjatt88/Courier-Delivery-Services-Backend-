@@ -10,15 +10,6 @@ const blacklistedTokens = new Set();
 
 const register = async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
-    if (!/^\d{11}$/.test(phoneNumber)) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Phone number must be numeric and exactly 11 digits (e.g. 03XXXXXXXXX).",
-        });
-    }
     const createdByAdmin = req.user && req.user.role === "admin";
     const user = await authService.register(req.body, createdByAdmin);
         const message = createdByAdmin
