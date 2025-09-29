@@ -1,6 +1,6 @@
 const db = require('../../models');
-const User = db.User;
-const { Op } = require("sequelize"); 
+const { User, BookingParcel } = db;
+const { Op, Sequelize } = require("sequelize"); 
 
 
 
@@ -120,6 +120,45 @@ const unsuspendUser = async (userId) => {
     return user;
 };
 
+/**
+ * 
+ * @returns {Promise<object>}
+ */
+const getAgentStats = async () => {
+    const totalAgents = await User.count({
+        where: {
+            role: 'agent'
+        }
+    });
+    const activeParcelStatuses = [
+        'scheduled',
+        'picked_up',
+        'in_transit',
+        'out_for_delivery'
+    ];
+
+    const activeAgentIdsResult = await BookingParcel.findAll({
+        where: {
+            status: {
+                [Op.in]: activeParcelStatuses
+            },
+            agentId: {
+                [Op.ne]: null 
+            }
+        },
+        attributes: [
+            [Sequelize.fn('DISTINCT', Sequelize.col('agentId')), 'agentId']
+        ],
+        raw: true
+    });
+    const activeAgents = activeAgentIdsResult.length;
+    return {
+        totalAgents,
+        activeAgents
+    };
+};
+
+
 module.exports = {
     getAllUsers,
     deleteUser,
@@ -127,5 +166,6 @@ module.exports = {
     blockUser,
     unblockUser,
     suspendUser,
-    unsuspendUser
+    unsuspendUser,
+    getAgentStats
 };

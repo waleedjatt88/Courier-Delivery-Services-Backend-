@@ -95,6 +95,7 @@ const prepareCheckout = async (parcelData, customerId) => {
     totalCharges: parcel.deliveryCharge,
   };
 };
+
 const confirmCodBooking = async (parcelId, customerId) => {
   let parcel = await BookingParcel.findOne({
     where: { id: parcelId, customerId: customerId },

@@ -286,6 +286,17 @@ const confirmCodPayment = async (req, res) => {
     }
 };
 
+const getAgentStats = async (req, res) => {
+    try {
+        const stats = await adminService.getAgentStats();
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error("Admin: Error fetching agent stats:", error);
+        res.status(500).json({ message: "Failed to fetch agent statistics." });
+    }
+};
+
+
 
 module.exports = {
     getAllUsers,
@@ -310,6 +321,7 @@ module.exports = {
     prepareManualOrder,
     confirmPayNowOrder,
     sendPaymentLink,
-    confirmCodPayment
+    confirmCodPayment,
+    getAgentStats
 
 };

@@ -40,8 +40,11 @@ router.get("/static-pages/:pageType", [verifyToken, isAdmin], staticPageControll
 router.patch("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.updateStaticPage);
 router.delete("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.deleteStaticPage);
 
+
 router.get("/stats/dashboard", [verifyToken, isAdmin], adminController.getDashboardStats);
 router.get("/agents/:id/performance", [verifyToken, isAdmin], adminController.getAgentPerformance);
+router.get('/stats/agents', [verifyToken, isAdmin], adminController.getAgentStats);
+
 
 router.post("/manual-orders/prepare", [verifyToken, isAdmin], adminController.prepareManualOrder);
 router.patch("/manual-orders/:id/confirm-cash", [verifyToken, isAdmin], adminController.confirmPayNowOrder);
