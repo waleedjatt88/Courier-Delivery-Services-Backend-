@@ -214,42 +214,42 @@ const getMyParcels = async (customerId) => {
 
 const getAllParcels = async (filterType = null) => {
     const queryOptions = {
-        order: [['id', 'DESC']], 
+        order: [['id', 'DESC']],
         include: [
             {
                 model: db.User,
-                as: 'Customer', 
+                as: 'Customer',
                 attributes: ['id', 'fullName', 'email'],
             },
             {
                 model: db.User,
-                as: 'Agent',    
-                attributes: ['id', 'fullName'], 
-                required: false 
+                as: 'Agent',
+                attributes: ['id', 'fullName'],
+                required: false
             }
         ],
+        where: {} 
     };
-    const whereClause = {};
 
     switch (filterType) {
         case 'active':
-            whereClause.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
+            queryOptions.where.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
             break;
         case 'scheduled':
-            whereClause.status = 'scheduled';
+            queryOptions.where.status = 'scheduled';
             break;
         case 'order_placed':
-            whereClause.status = 'order_placed';
+            queryOptions.where.status = 'order_placed';
             break;
         case 'cancelled':
-            whereClause.status = 'cancelled';
-            whereClause.paymentStatus = { [Op.in]: ['pending', 'completed'] };
+            queryOptions.where.status = 'cancelled';
+            queryOptions.where.paymentStatus = { [Op.in]: ['pending', 'completed'] };
             break;
-        default:
+                default:
+            queryOptions.where.status = {
+                [Op.notIn]: ['unconfirmed', 'cancelled']
+            };
             break;
-    }
-    if (Object.keys(whereClause).length > 0) {
-        queryOptions.where = whereClause;
     }
     const parcels = await db.BookingParcel.findAll(queryOptions);
     return parcels;

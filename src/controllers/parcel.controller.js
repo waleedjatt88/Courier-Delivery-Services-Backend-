@@ -141,6 +141,42 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+const prepareCheckoutForChatbot = async (req, res) => {
+    try {
+        const { customerId, parcelData } = req.body;
+        if (!customerId || !parcelData) {
+            return res.status(400).json({ message: "customerId and parcelData are required in the request body." });
+        }
+        const result = await parcelService.prepareCheckout(parcelData, customerId);
+        res.status(201).json(result);
+    } catch (error) {
+        console.error("Chatbot Checkout Error:", error);
+        res.status(500).json({ message: "Failed to create parcel from chatbot.", error: error.message });
+    }
+};
+const confirmCodForChatbot = async (req, res) => {
+    try {
+        const { customerId } = req.body;
+        const { parcelId } = req.params;
+
+        if (!customerId) {
+            return res.status(400).json({ message: "customerId is required in the request body." });
+        }
+        const confirmedParcel = await parcelService.confirmCodBooking(parcelId, customerId);
+        res.status(200).json({ 
+            message: "COD order has been confirmed successfully via Chatbot!", 
+            parcel: confirmedParcel 
+        });
+    } catch (error) {
+        console.error("Chatbot COD Confirmation Error:", error);
+        if (error.message.includes("Invalid parcel")) {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: "Failed to confirm COD order from chatbot." });
+    }
+};
+
+
 
 
 module.exports = {
@@ -151,4 +187,7 @@ module.exports = {
   cancelParcel,
   getInvoice,
   getDashboardStats,
+  prepareCheckoutForChatbot,
+  confirmCodForChatbot
+
 };

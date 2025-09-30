@@ -293,6 +293,16 @@ const getAgentStats = async (req, res) => {
     }
 };
 
+const getOverallPerformanceStats = async (req, res) => {
+    try {
+        const stats = await adminService.getOverallPerformanceStats();
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error("Admin: Error fetching overall performance stats:", error);
+        res.status(500).json({ message: "Failed to fetch overall performance stats." });
+    }
+};
+
 
 
 module.exports = {
@@ -318,6 +328,7 @@ module.exports = {
     sendPaymentLink,
     confirmCodPayment,
     getAgentStats,
-    getGlobalStats
+    getGlobalStats,
+    getOverallPerformanceStats
 
 };

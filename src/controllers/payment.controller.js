@@ -62,7 +62,26 @@ const stripeWebhook = (req, res) => {
     res.json({ received: true });
 };
 
+const createCheckoutSessionForChatbot = async (req, res) => {
+    try {
+        const { parcelId, customerId } = req.body;
+
+        if (!parcelId || !customerId) {
+            return res.status(400).json({ message: "parcelId and customerId are required." });
+        }
+
+        const session = await paymentService.createCheckoutSession(parcelId, customerId);
+
+        res.status(200).json(session);
+
+    } catch (error) {
+        console.error("Error creating Stripe session for chatbot:", error);
+        res.status(500).json({ message: "Failed to create payment session for chatbot.", error: error.message });
+    }
+};
+
 module.exports = {
     createCheckoutSession,
-    stripeWebhook 
+    stripeWebhook ,
+    createCheckoutSessionForChatbot
 };

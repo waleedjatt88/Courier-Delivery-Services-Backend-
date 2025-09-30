@@ -43,6 +43,7 @@ router.delete("/static-pages/:pageType", [verifyToken, isAdmin], staticPageContr
 
 router.get('/stats/agents', [verifyToken, isAdmin], adminController.getAgentStats);
 router.get('/stats/global', [verifyToken, isAdmin], adminController.getGlobalStats);
+router.get('/stats/performance', [verifyToken, isAdmin], adminController.getOverallPerformanceStats);
 
 
 router.post("/manual-orders/prepare", [verifyToken, isAdmin], adminController.prepareManualOrder);

@@ -185,6 +185,35 @@ const getGlobalParcelStats = async () => {
     return stats;
 };
 
+/**
+ * 
+ * @returns {Promise<object>}
+ */
+const getOverallPerformanceStats = async () => {
+    const totalAssignedParcels = await BookingParcel.count({
+        where: {
+            agentId: { [Op.ne]: null },
+            status: { [Op.notIn]: ['unconfirmed', 'cancelled'] }
+        }
+    });
+
+    const deliveredParcels = await BookingParcel.count({
+        where: {
+            agentId: { [Op.ne]: null },
+            status: 'delivered'
+        }
+    });
+
+    const calculatedPercentage = (totalAssignedParcels > 0)
+        ? Math.round((deliveredParcels / totalAssignedParcels) * 100)
+        : 0;
+
+    return {
+         totalAssignedParcels,
+        deliveryPerformancePercentage: `${calculatedPercentage}%` 
+    };
+};
+
 
 
 module.exports = {
@@ -196,5 +225,6 @@ module.exports = {
     suspendUser,
     unsuspendUser,
     getAgentStats,
-    getGlobalParcelStats
+    getGlobalParcelStats,
+    getOverallPerformanceStats
 };
