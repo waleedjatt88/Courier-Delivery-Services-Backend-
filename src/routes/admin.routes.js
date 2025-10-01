@@ -4,6 +4,7 @@ const adminController = require("../controllers/admin.controller.js");
 const authController = require("../controllers/auth.controller.js");
 const staticPageController = require('../controllers/static-page.controller.js');
 
+
 const {
   verifyToken,
   isAdmin,
@@ -33,6 +34,8 @@ router
 
 router.get("/pricing", [verifyToken, isAdmin], adminController.getPricingRules);
 router.patch("/pricing/:id", [verifyToken, isAdmin], adminController.updatePricingRule);
+router.get('/pricing/commission/agent', [verifyToken, isAdmin], adminController.getAgentCommission);
+router.patch('/pricing/commission/agent', [verifyToken, isAdmin], adminController.updateAgentCommission);
 
 router.get("/static-pages", [verifyToken, isAdmin], staticPageController.getAllStaticPages);
 router.post("/static-pages", [verifyToken, isAdmin], staticPageController.createStaticPage);

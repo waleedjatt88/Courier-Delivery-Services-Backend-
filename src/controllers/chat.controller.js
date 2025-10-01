@@ -5,7 +5,6 @@ const getCustomerChatHistory = async (req, res) => {
         const customerId = req.params.customerId; 
         const requesterId = req.user.id; 
         const requesterRole = req.user.role; 
-
         const messages = await chatService.getChatHistory(customerId, requesterId, requesterRole);
         res.status(200).json({ messages });
     } catch (error) {

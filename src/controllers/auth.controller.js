@@ -7,7 +7,6 @@ const { User } = require("../../models");
 const blacklistedTokens = new Set();
 
 
-
 const register = async (req, res) => {
   try {
     const createdByAdmin = req.user && req.user.role === "admin";
@@ -15,12 +14,10 @@ const register = async (req, res) => {
         const message = createdByAdmin
       ? "User created successfully."
       : "User registered! Please check your email for OTP.";
-
     res.status(201).json({
       message: message, 
       user: user,      
     });
-
   } catch (error) {
     res.status(400).json({ message: "Registration failed: " + error.message });
   }
@@ -30,7 +27,6 @@ const login = async (req, res) => {
   try {
     const data = await authService.login(req.body);
     console.log(`User logged in: ${data.user.email} | Role: ${data.user.role}`);
-
     const token = jwt.sign(
       {
         id: data.user.id,
@@ -41,7 +37,6 @@ const login = async (req, res) => {
         expiresIn: "7d",
       }
     );
-
     res.status(200).json({
       message: "Login successful!",
       token,
@@ -58,11 +53,9 @@ const sendOtp = async (req, res) => {
     if (!email || !type) {
       return res.status(400).json({ message: "Email and type are required." });
     }
-
     if (!Object.values(authService.OtpType).includes(type)) {
       return res.status(400).json({ message: "Invalid OTP type specified." });
     }
-
     const result = await authService.sendOtp(email, type);
     res.status(200).json(result);
   } catch (error) {
@@ -84,7 +77,6 @@ const verifyOtp = async (req, res) => {
     if (!/^\d{6}$/.test(otp)) {
       return res.status(400).json({ message: "Invalid OTP format." });
     }
-
     const result = await authService.verifyOtp(email, otp, type);
     res.status(200).json(result);
   } catch (error) {
@@ -95,7 +87,6 @@ const verifyOtp = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { resetToken, password, confirmPassword } = req.body;
-
     if (!resetToken || !password || !confirmPassword) {
       return res
         .status(400)
@@ -104,7 +95,6 @@ const resetPassword = async (req, res) => {
     if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match." });
     }
-
     const result = await authService.resetPassword(resetToken, password);
     res.status(200).json(result);
   } catch (error) {
@@ -122,26 +112,6 @@ const logout = (req, res) => {
   res.status(200).json({ message: "Logout successful, token expired." });
 };
 
-// const googleCallback = (req, res) => {
-//     const user = req.user;
-
-//     const token = jwt.sign(
-//         {
-//             id: user.id,
-//             role: user.role ,
-//             email: user.email,
-//             fullName: user.fullName
-
-//         },
-//         process.env.JWT_SECRET,
-//         {
-//             expiresIn: '7d'
-//         }
-//     );
-
-//     res.redirect(`http://localhost:5173/auth/callback?token=${token}`);
-// };
-
 const googleLogin = async (req, res) => {
     try {
         const { idToken } = req.body;
@@ -149,12 +119,9 @@ const googleLogin = async (req, res) => {
             idToken: idToken,
             audience: process.env.GOOGLE_CLIENT_ID, 
         });
-
         const payload = ticket.getPayload();
         const { name, email } = payload;
-
         let user = await User.findOne({ where: { email: email } });
-
         if (!user) {
             user = await User.create({
                 fullName: name,
@@ -164,7 +131,6 @@ const googleLogin = async (req, res) => {
                 role: 'customer',
                 isVerified: true 
             });
-            
             try {
                 await sendEmail({
                     email: user.email,
@@ -179,7 +145,6 @@ const googleLogin = async (req, res) => {
                 console.error("Could not send welcome email to new Google user:", emailError);
             }
         }
-
         const appToken = jwt.sign(
             { 
                 id: user.id, 
@@ -189,9 +154,7 @@ const googleLogin = async (req, res) => {
             process.env.JWT_SECRET, 
             { expiresIn: '7d' }
         );
-
         res.status(200).json({ token: appToken, user: user });
-
     } catch (error) {
         console.error("Google authentication process failed:", error);
         res.status(401).json({ message: 'Google authentication failed.' });

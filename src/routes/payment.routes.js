@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payment.controller.js');
 const { verifyToken } = require('../middleware/auth.middleware.js');
-const { verifyApiKey } = require('../middleware/verifyApiKey.js');
 
 
 
@@ -11,7 +10,6 @@ router.post('/create-checkout-session', verifyToken, paymentController.createChe
 router.post( '/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook
 );
 
-router.post('/chatbot/create-checkout-session', verifyApiKey, paymentController.createCheckoutSessionForChatbot);
 
 
 

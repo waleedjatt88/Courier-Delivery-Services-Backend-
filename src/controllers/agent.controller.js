@@ -15,19 +15,13 @@ const getMyParcelDetails = async (req, res) => {
     try {
         const agentId = req.user.id; 
         const parcelId = req.params.id; 
-
         const parcel = await parcelService.getParcelById(parcelId);
-
         if (!parcel) {
             return res.status(404).json({ message: "Parcel not found." });
         }
-
-        
         if (parcel.agentId !== agentId) {
             return res.status(403).json({ message: "Forbidden: You are not authorized to view this parcel." });
         }
-        
-
         res.status(200).json({ parcel });
 
     } catch (error) {
@@ -55,7 +49,6 @@ const getMyEarnings = async (req, res) => {
     try {
         const agentId = req.user.id;
         const period = req.query.period || 'daily';
-        
         const earnings = await reportingService.getAgentEarnings(agentId, period);
         res.status(200).json(earnings);
     } catch (error) {

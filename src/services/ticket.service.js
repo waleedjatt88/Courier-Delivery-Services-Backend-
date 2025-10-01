@@ -5,13 +5,10 @@ const { Ticket, BookingParcel } = db;
 
 const createTicket = async (ticketData, customerId) => {
     const { subject, description, trackingNumber } = ticketData;
-
     if (!subject || !description) {
         throw new Error("Subject and description are required.");
     }
-
     let parcelId = null; 
-
     if (trackingNumber && trackingNumber.trim() !== '') {
         const parcel = await BookingParcel.findOne({
             where: {
@@ -19,14 +16,11 @@ const createTicket = async (ticketData, customerId) => {
                 customerId: customerId 
             }
         });
-
         if (!parcel) {
             throw new Error(`Invalid Tracking ID or this parcel does not belong to you.`);
         }
-
         parcelId = parcel.id;
     }
-
     const newTicket = await Ticket.create({
         subject: subject,
         description: description,
@@ -38,11 +32,6 @@ const createTicket = async (ticketData, customerId) => {
     return newTicket;
 };
 
-/**
- * 
- * 
- * @returns {Array} 
- */
 const getAllTickets = async () => {
     const tickets = await db.Ticket.findAll({
         order: [['status', 'ASC'], ['createdAt', 'DESC']], 
@@ -75,17 +64,14 @@ const getTicketById = async (ticketId) => {
 const updateTicketStatus = async (ticketId, newStatus) => {
     const ticket = await db.Ticket.findByPk(ticketId);
     if (!ticket) throw new Error("Ticket not found.");
-
     const allowedStatuses = ['in_progress', 'closed'];
     if (!allowedStatuses.includes(newStatus)) {
         throw new Error("Invalid status provided.");
     }
-
     ticket.status = newStatus;
     await ticket.save();
     return ticket;
 };
-
 
 module.exports = {
     createTicket,

@@ -24,6 +24,7 @@ const paymentController = require("./controllers/payment.controller.js");
 const publicRoutes = require('./routes/public.routes.js');
 const { autoRejectJob } = require('./scheduler.js');
 const reportingRoutes = require("./routes/reporting.routes.js");
+const weightSlabRoutes = require("./routes/weightslab.routes.js"); 
 
 const initializeSocket = require('./socket-handler.js');
 
@@ -34,7 +35,9 @@ const server = http.createServer(app);
 const allowedOrigins = [
     'http://localhost:5173',      
     'http://localhost:5174',      
-    'http://localhost:3000',     
+    'http://localhost:3000', 
+    'http://localhost:5500',   
+    'http://127.0.0.1:5500',  
 ];
 
 const io = new Server(server, {
@@ -84,6 +87,7 @@ app.use("/api/tickets", ticketRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api', publicRoutes);
 app.use("/api/reporting", reportingRoutes);
+app.use("/api/admin/weight-slabs", weightSlabRoutes); 
 
 
 app.get("/", (req, res) => {

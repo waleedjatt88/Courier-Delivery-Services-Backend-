@@ -7,14 +7,10 @@ const reportingService = require('../services/reporting.service.js');
 const manualOrderService = require('../services/manualOrder.service.js');
 
 
-
-
 const getAllUsers = async (req, res) => {
     try {
-    
         const { type } = req.query;
         const users = await adminService.getAllUsers(type);
-        
         res.status(200).json(users);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -33,7 +29,6 @@ const deleteUser = async (req, res) => {
     }
 };
 
- 
 const getAllParcels = async (req, res) => {
     try {
         const { type } = req.query;
@@ -45,18 +40,13 @@ const getAllParcels = async (req, res) => {
     }
 };
 
-
-
-
 const getParcelById = async (req, res) => {
     try {
         const parcelId = req.params.id;
         const parcel = await parcelService.getParcelById(parcelId);
-        
         if (!parcel) {
             return res.status(404).json({ message: "Parcel not found." });
         }
-
         res.status(200).json({ parcel: parcel });
     } catch (error) {
         console.error("Admin: Error fetching parcel by ID:", error);
@@ -78,23 +68,18 @@ const updateUser = async (req, res) => {
     }
 };
 
-
 const assignAgent = async (req, res) => {
     try {
         const parcelId = req.params.id; 
         const { agentId } = req.body; 
-
         if (!agentId) {
             return res.status(400).json({ message: "Agent ID is required in the body." });
         }
-
         const updatedParcel = await parcelService.assignAgentToParcel(parcelId, agentId);
-
         res.status(200).json({
             message: `Agent ${agentId} has been assigned to parcel ${parcelId}.`,
             parcel: updatedParcel
         });
-
     } catch (error) {
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
@@ -102,7 +87,6 @@ const assignAgent = async (req, res) => {
         res.status(400).json({ message: "Assignment failed: " + error.message });
     }
 };
-
 
 const blockUser = async (req, res) => {
     try {
@@ -126,7 +110,6 @@ const suspendUser = async (req, res) => {
             message: `User ${user.fullName} has been suspended successfully for 3 days.`, 
             user: user 
         });
-        
     } catch (error) { 
         res.status(400).json({ message: error.message }); 
     }
@@ -175,6 +158,24 @@ const getPricingRules = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch pricing rules." });
     }
 };
+const getAgentCommission = async (req, res) => {
+    try {
+        const commission = await pricingService.getAgentCommission();
+        res.status(200).json(commission);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateAgentCommission = async (req, res) => {
+    try {
+        const { agentCommissionPercent } = req.body;
+        const result = await pricingService.updateAgentCommission(agentCommissionPercent);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
 
 const updatePricingRule = async (req, res) => {
     try {
@@ -194,12 +195,10 @@ const cancelParcel = async (req, res) => {
     try {
         const parcelId = req.params.id;
         const updatedParcel = await parcelService.cancelParcelByAdmin(parcelId);
-
         res.status(200).json({
             message: `Parcel ${updatedParcel.trackingNumber} has been cancelled.`,
             parcel: updatedParcel
         });
-
     } catch (error) {
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
@@ -212,18 +211,14 @@ const cancelParcel = async (req, res) => {
     try {
         const parcelId = req.params.id;
         const { pickupSlot } = req.body; 
-
         if (!pickupSlot) {
             return res.status(400).json({ message: "New pickup slot is required in the body." });
         }
-
         const updatedParcel = await parcelService.rescheduleParcelByAdmin(parcelId, pickupSlot);
-
         res.status(200).json({
             message: `Parcel ${updatedParcel.trackingNumber} has been successfully rescheduled.`,
             parcel: updatedParcel
         });
-
     } catch (error) {
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
@@ -237,7 +232,6 @@ const getGlobalStats = async (req, res) => {
         const stats = await adminService.getGlobalParcelStats();
         res.status(200).json(stats);
     } catch (error) {
-
         console.error("Admin: Error fetching global stats:", error);
         res.status(500).json({ message: "Failed to fetch global statistics." });
     }
@@ -269,12 +263,10 @@ const confirmCodPayment = async (req, res) => {
     try {
         const parcelId = req.params.id;
         const updatedParcel = await parcelService.confirmCodPaymentByAdmin(parcelId);
-
         res.status(200).json({
             message: `COD payment for parcel ${updatedParcel.trackingNumber} has been confirmed.`,
             parcel: updatedParcel
         });
-
     } catch (error) {
         if (error.message.includes("not found")) {
             return res.status(404).json({ message: error.message });
@@ -303,8 +295,6 @@ const getOverallPerformanceStats = async (req, res) => {
     }
 };
 
-
-
 module.exports = {
     getAllUsers,
     deleteUser,
@@ -329,6 +319,7 @@ module.exports = {
     confirmCodPayment,
     getAgentStats,
     getGlobalStats,
-    getOverallPerformanceStats
-
+    getOverallPerformanceStats,
+    getAgentCommission,
+    updateAgentCommission
 };

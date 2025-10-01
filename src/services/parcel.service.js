@@ -3,17 +3,13 @@
 const db = require("../../models");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const { User, BookingParcel, Pricing, Media, Zone } = db;
+const { BookingParcel, User } = db; 
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
 const { Op, Sequelize } = require("sequelize");
 
-/**
- *
- * @param {object} parcelData
- * @param {number} customerId
- * @returns {object}
- */
+
+
 const prepareCheckout = async (parcelData, customerId) => {
   const {
     pickupAddress,
@@ -27,7 +23,6 @@ const prepareCheckout = async (parcelData, customerId) => {
     pickupZoneId,
     deliveryZoneId,
   } = parcelData;
-
   if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
     throw new Error(
       "Pickup zone, Delivery zone, and Delivery Type are required."
@@ -36,40 +31,47 @@ const prepareCheckout = async (parcelData, customerId) => {
   if (deliveryType === "scheduled" && !pickupSlot) {
     throw new Error("Pickup Slot is required for scheduled delivery.");
   }
-
+  if (packageWeight > 50) {
+      throw new Error("Maximum weight limit is 50kg. Please contact support for heavier parcels.");
+  }
   const pickupPricing = await db.Pricing.findOne({
     where: { zoneId: pickupZoneId },
   });
   const deliveryPricing = await db.Pricing.findOne({
     where: { zoneId: deliveryZoneId },
   });
-
   if (!pickupPricing || !deliveryPricing) {
     throw new Error("Invalid zone provided. Pricing not available.");
   }
-
   let totalCharge = 0;
   if (pickupZoneId === deliveryZoneId) {
     totalCharge = pickupPricing.baseFare;
   } else {
     totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
   }
-
-  const weightThreshold = 5;
-  if (packageWeight > weightThreshold) {
-    const perKgCharge =
-      (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
-    const extraWeight = packageWeight - weightThreshold;
-    totalCharge += extraWeight * perKgCharge;
+  if (packageWeight > 5) {
+      const weightSlab = await db.WeightSlab.findOne({
+          where: {
+              minWeight: { [Op.lt]: packageWeight }, 
+              maxWeight: { [Op.gte]: packageWeight } 
+          }
+      });
+      if (weightSlab) {
+          totalCharge += weightSlab.charge;
+      } else if (packageWeight <= 50) { 
+          console.warn(`No weight slab found for weight: ${packageWeight}kg. Extra weight charge not applied.`);
+      }
   }
-
   if (deliveryType === "instant") {
     const expressPercent =
       (pickupPricing.expressChargePercent +
         deliveryPricing.expressChargePercent) /
       2;
-    totalCharge *= 1 + expressPercent / 100;
+    if (expressPercent > 0) {
+        totalCharge *= 1 + expressPercent / 100;
+    }
   }
+
   const uniquePart = uuidv4().split("-").pop().toUpperCase();
   const trackingNumber = `PK-${uniquePart}`;
 
@@ -155,7 +157,6 @@ const confirmCodBooking = async (parcelId, customerId) => {
   } catch (geoError) {
     console.error("!!! Geocoding Error on COD confirm:", geoError.message);
   }
-
   try {
     const customer = await User.findByPk(customerId);
     if (customer) {
@@ -169,7 +170,6 @@ const confirmCodBooking = async (parcelId, customerId) => {
         relatedId: parcel.id,
         relatedType: "parcel",
       });
-
       await sendEmail({
         email: customer.email,
         subject: `Parcel Booked! Tracking ID: ${parcel.trackingNumber}`,
@@ -188,21 +188,15 @@ const confirmCodBooking = async (parcelId, customerId) => {
   } catch (error) {
     console.error("!!! Invoice/Email Error on COD confirm:", error);
   }
-
   await parcel.reload();
   return parcel;
 };
 
-/**
- *
- * @param {number} customerId
- * @returns {Array}
- */
+
 const getMyParcels = async (customerId) => {
   const parcels = await db.BookingParcel.findAll({
     where: {
       customerId: customerId,
-
       status: {
         [Op.notIn]: ["unconfirmed", "cancelled"],
       },
@@ -230,7 +224,6 @@ const getAllParcels = async (filterType = null) => {
         ],
         where: {} 
     };
-
     switch (filterType) {
         case 'active':
             queryOptions.where.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
@@ -255,11 +248,7 @@ const getAllParcels = async (filterType = null) => {
     return parcels;
 };
 
-/**
- *
- * @param {number} parcelId
- * @returns {object}
- */
+
 const getParcelById = async (parcelId) => {
   const parcel = await db.BookingParcel.findByPk(parcelId, {
     include: [
@@ -278,12 +267,6 @@ const getParcelById = async (parcelId) => {
   return parcel;
 };
 
-/**
- *
- * @param {number} parcelId
- * @param {number} agentId
- * @returns {object}
- */
 const assignAgentToParcel = async (parcelId, agentId) => {
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) {
@@ -294,18 +277,15 @@ const assignAgentToParcel = async (parcelId, agentId) => {
       `This parcel already has an assigned agent (ID: ${parcel.agentId}). Current parcel status: '${parcel.status}'.`
     );
   }
-
   if (parcel.status !== "order_placed") {
     throw new Error(
       `This parcel cannot be assigned because its current status is '${parcel.status}'.`
     );
   }
-
   const agent = await db.User.findByPk(agentId);
   if (!agent) {
     throw new Error("Agent not found with this ID.");
   }
-
   if (agent.role !== "agent") {
     throw new Error(`User with ID ${agentId} is not a delivery agent.`);
   }
@@ -319,23 +299,15 @@ const assignAgentToParcel = async (parcelId, agentId) => {
       `This agent previously rejected the job. Reason: "${parcel.agentRejectionReason}". Please assign another agent.`
     );
   }
-
   parcel.agentId = agentId;
   parcel.status = "order_placed";
   parcel.assignedAt = new Date();
   parcel.agentAcceptanceStatus = "pending";
   parcel.agentRejectionReason = null;
-
   await parcel.save();
-
   return parcel;
 };
 
-/**
- *
- * @param {number} agentId
- * @returns {Array}
- */
 const getParcelsByAgentId = async (agentId) => {
   const parcels = await db.BookingParcel.findAll({
     where: {
@@ -358,7 +330,6 @@ const getParcelFiles = async (parcelId, customerId) => {
   if (!parcel) {
     throw new Error("Parcel not found or you are not authorized.");
   }
-
   const files = await db.Media.findAll({
     where: {
       relatedId: parcelId,
@@ -424,14 +395,12 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
       parcel.agentCommission = Math.round(calculatedCommission);
       parcel.remainingAmount = parcel.deliveryCharge - parcel.agentCommission;
     }
-
     try {
       if (parcel.Customer) {
         const deliveryInvoiceUrl = invoiceService.generateDeliveryInvoice(
           parcel,
           parcel.Customer
         );
-
         await db.Media.create({
           url: deliveryInvoiceUrl,
           mediaType: "DELIVERY_INVOICE",
@@ -459,11 +428,9 @@ const updateParcelStatusByAgent = async (parcelId, agentId, newStatus) => {
 
 const getGlobalCommissionRate = async () => {
   let commissionRate = 10.0;
-
   const globalZone = await db.Zone.findOne({
     where: { name: "GLOBAL_SETTINGS" },
   });
-
   if (globalZone) {
     const globalPricingRule = await db.Pricing.findOne({
       where: { zoneId: globalZone.id },
@@ -475,40 +442,26 @@ const getGlobalCommissionRate = async () => {
   return commissionRate;
 };
 
-/**
- *
- * @param {number} parcelId
- * @returns {object}
- */
 const cancelParcelByAdmin = async (parcelId) => {
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) {
     throw new Error("Parcel not found.");
   }
-
   if (parcel.status === "delivered") {
     throw new Error("Cannot cancel a parcel that has already been delivered.");
   }
-
   parcel.status = "cancelled";
   parcel.agentId = null;
   await parcel.save();
-
   return parcel;
 };
 
-/**
- *
- * @param {number} parcelId
- * @param {Date} pickupSlot
- * @returns {object}
- */
+
 const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) {
     throw new Error("Parcel not found.");
   }
-
   if (parcel.status !== "cancelled") {
     throw new Error(
       `Only cancelled parcels can be rescheduled. Current status: '${parcel.status}'.`
@@ -518,9 +471,7 @@ const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
   if (!pickupSlot || pickupSlot.trim() === "") {
     throw new Error("New pickup slot is required when rescheduling.");
   }
-
   const originalPickupSlot = pickupSlot;
-
   try {
     await parcel.update({
       status: "order_placed",
@@ -528,7 +479,6 @@ const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
       pickupSlot: originalPickupSlot,
       updatedAt: new Date(),
     });
-
     await parcel.reload();
     return parcel;
   } catch (error) {
@@ -542,11 +492,9 @@ const acceptJobByAgent = async (parcelId, agentId) => {
     where: { id: parcelId, agentId: agentId },
   });
   if (!parcel) throw new Error("Parcel not found or not assigned to you.");
-
   if (parcel.agentAcceptanceStatus === "accepted") {
     throw new Error("You have already accepted this job.");
   }
-
   if (new Date() > new Date(parcel.assignedAt.getTime() + 10 * 60 * 1000)) {
     parcel.agentAcceptanceStatus = "rejected";
     parcel.agentRejectionReason = "Auto-rejected: Timed out";
@@ -555,7 +503,6 @@ const acceptJobByAgent = async (parcelId, agentId) => {
     await parcel.save();
     throw new Error("Acceptance time has expired. Job has been unassigned.");
   }
-
   parcel.agentAcceptanceStatus = "accepted";
   parcel.status = "scheduled";
   await parcel.save();
@@ -566,21 +513,17 @@ const rejectJobByAgent = async (parcelId, agentId, reason) => {
   if (!reason || reason.trim() === "") {
     throw new Error("Rejection reason is required.");
   }
-
   const parcel = await db.BookingParcel.findOne({
     where: { id: parcelId, agentId: agentId },
   });
   if (!parcel) throw new Error("Parcel not found or not assigned to you.");
-
   if (parcel.agentAcceptanceStatus === "accepted") {
     throw new Error("You cannot reject a job after accepting it.");
   }
-
   parcel.agentAcceptanceStatus = "rejected";
   parcel.agentRejectionReason = reason;
   parcel.status = "order_placed";
   await parcel.save();
-
   return parcel;
 };
 
@@ -593,25 +536,16 @@ const confirmCodPaymentByAdmin = async (parcelId) => {
     throw new Error("Payment can only be confirmed for delivered parcels.");
   if (parcel.paymentStatus === "completed")
     throw new Error("Payment for this parcel is already completed.");
-
   const commissionRate = await getGlobalCommissionRate();
   const calculatedCommission = parcel.deliveryCharge * (commissionRate / 100);
   const calculatedRemaining = parcel.deliveryCharge - calculatedCommission;
-
   parcel.agentCommission = Math.round(calculatedCommission);
   parcel.remainingAmount = Math.round(calculatedRemaining);
   parcel.paymentStatus = "completed";
-
   await parcel.save();
   return parcel;
 };
 
-/**
- *
- * @param {number} parcelId
- * @param {number} customerId
- * @returns {Promise<object>}
- */
 const cancelParcelByUser = async (parcelId, customerId) => {
   const parcel = await db.BookingParcel.findOne({
     where: {
@@ -619,7 +553,6 @@ const cancelParcelByUser = async (parcelId, customerId) => {
       customerId: customerId,
     },
   });
-
   if (!parcel) {
     throw new Error("Parcel not found or you are not authorized to cancel it.");
   }
@@ -628,11 +561,9 @@ const cancelParcelByUser = async (parcelId, customerId) => {
       "This parcel cannot be cancelled as it has already been confirmed or processed."
     );
   }
-
   parcel.status = "cancelled";
   parcel.paymentStatus = "cancelled";
   await parcel.save();
-
   return parcel;
 };
 
@@ -642,7 +573,6 @@ const getAllInvoicePaths = async (parcelId, user) => {
   }
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) throw new Error("Parcel not found.");
-
   const allInvoices = await db.Media.findAll({
     where: {
       relatedId: parcelId,
@@ -653,7 +583,6 @@ const getAllInvoicePaths = async (parcelId, user) => {
     },
     attributes: ["url", "mediaType"],
   });
-
   return allInvoices;
 };
 
@@ -661,14 +590,11 @@ const getInvoicePathForUser = async (parcelId, user, invoiceType) => {
   if (!invoiceType) {
     throw new Error("Invoice type must be specified.");
   }
-
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) throw new Error("Parcel not found.");
-
   if (user.role !== "admin" && parcel.customerId !== user.id) {
     throw new Error("You are not authorized to view this invoice.");
   }
-
   const invoiceMedia = await db.Media.findOne({
     where: {
       relatedId: parcelId,
@@ -676,16 +602,10 @@ const getInvoicePathForUser = async (parcelId, user, invoiceType) => {
       mediaType: invoiceType,
     },
   });
-
   if (!invoiceMedia) throw new Error("The specified invoice does not exist.");
-
   return invoiceMedia.url;
 };
-/**
- *
- * @param {number} customerId
- * @returns {Promise<object>}
- */
+
 const getCustomerDashboardStats = async (customerId) => {
   const relevantStatuses = [
     "order_placed",
@@ -717,25 +637,21 @@ const getCustomerDashboardStats = async (customerId) => {
     out_for_delivery: 0,
     delivered: 0,
   };
-
   for (const item of statusCounts) {
     const status = item.status;
     const count = parseInt(item.count, 10);
-
     if (status === "scheduled") {
       stats.order_placed += count;
     } else if (stats.hasOwnProperty(status)) {
       stats[status] = count;
     }
   }
-
   stats.totalBookings =
     stats.order_placed +
     stats.picked_up +
     stats.in_transit +
     stats.out_for_delivery +
     stats.delivered;
-
   return stats;
 };
 

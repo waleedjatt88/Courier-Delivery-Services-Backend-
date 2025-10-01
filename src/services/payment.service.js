@@ -1,6 +1,5 @@
 
 'use strict';
-
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../../models');
 const sendEmail = require('./notification.service.js');
@@ -13,14 +12,12 @@ const createCheckoutSession = async (parcelId, customerId) => {
     const parcel = await db.BookingParcel.findOne({
         where: { id: parcelId, customerId: customerId }
     });
-
     if (!parcel) {
         throw new Error('Parcel not found or you are not authorized.');
     }
     if (parcel.paymentStatus === 'completed') {
         throw new Error('This parcel has already been paid for.');
     }
-
     const line_items = [{
         price_data: {
             currency: 'pkr',
@@ -32,7 +29,6 @@ const createCheckoutSession = async (parcelId, customerId) => {
         },
         quantity: 1,
     }];
-
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: line_items,
@@ -49,12 +45,9 @@ const createCheckoutSession = async (parcelId, customerId) => {
 return { checkoutUrl: session.url };
 };
 
-
-
 const handleSuccessfulPayment = async (session) => {
     const parcelId = session.metadata.parcelId;
     const customerId = session.metadata.customerId;
-    
     const parcel = await db.BookingParcel.findOne({ 
         where: { id: parcelId, status: 'unconfirmed' },
         include: [
@@ -70,26 +63,19 @@ const handleSuccessfulPayment = async (session) => {
             }
         ]
     });
-
     if (parcel) {
         parcel.paymentMethod = 'STRIPE';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed'; 
         await parcel.save();
-        
         console.log(`✅ Parcel ID: ${parcelId} has been confirmed and paid via Stripe.`);
-
         try {
             const customer = await db.User.findByPk(customerId);
-
             if (parcel.bookingsource === 'manual' && customer && customer.role === 'guest') {
                 console.log(`Guest manual order detected for user: ${customer.email}`);
             }
-
-            if (customer) {
-                
+            if (customer) { 
     const invoiceUrl = invoiceService.generateBookingInvoice(parcel, customer);
-                
                 await db.Media.create({
                     url: invoiceUrl,
                     mediaType: 'BOOKING_INVOICE', 
@@ -97,7 +83,6 @@ const handleSuccessfulPayment = async (session) => {
                     relatedType: 'parcel'
                 });
                 console.log(`Invoice generated for paid parcel ${parcelId}.`);
-
                 await sendEmail({
                     email: customer.email,
                     subject: `Payment Received! Your order #${parcel.trackingNumber} is confirmed.`,
@@ -114,12 +99,10 @@ const handleSuccessfulPayment = async (session) => {
         } catch (error) {
             console.error("!!! Error during post-payment (invoice/email) processing:", error);
         }
-
     } else {
         console.log(`Webhook Info: Received event for a non-existent or already processed parcel ID: ${parcelId}. Ignoring.`);
     }
 };
-
 module.exports = {
     createCheckoutSession,
     handleSuccessfulPayment

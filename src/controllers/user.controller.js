@@ -27,14 +27,11 @@ const updateUser = async (req, res) => {
     if (req.user.role !== "admin" && req.body.role) {
       delete req.body.role;
     }
-
-   
     const updatedUser = await userService.updateUser(
       req.params.id, 
       req.body,
       req.file 
     );
-
     res.status(200).json({
       message: "User updated successfully",
       user: updatedUser,
@@ -68,13 +65,11 @@ const updateMyProfile = async (req, res) => {
     if (req.body.role) { 
       delete req.body.role;
     }
-
     const updatedUser = await userService.updateUser(
         userIdFromToken, 
         req.body, 
         req.file 
     );
-
     res.status(200).json({
       message: "Your profile was updated successfully",
       user: updatedUser,
@@ -83,7 +78,6 @@ const updateMyProfile = async (req, res) => {
     res.status(500).json({ message: "Server error: " + error.message });
   }
 };
-
 
 module.exports = {
   getUserById,

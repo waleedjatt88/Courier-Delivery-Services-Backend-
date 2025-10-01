@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const parcelController = require('../controllers/parcel.controller.js');
 const { verifyToken } = require('../middleware/auth.middleware.js');
-const { verifyApiKey } = require('../middleware/verifyApiKey.js');
 
 
 router.post('/prepareCheckout', verifyToken, parcelController.prepareCheckout);
@@ -17,10 +16,6 @@ router.get('/my/dashboard-stats', verifyToken, parcelController.getDashboardStat
 router.get('/:id/invoice', verifyToken, parcelController.getInvoice);
 
 router.patch('/:id/confirm-cod', verifyToken, parcelController.confirmCodBooking);
-
-
-router.post('/chatbot/prepareCheckout', verifyApiKey, parcelController.prepareCheckoutForChatbot);
-router.patch('/chatbot/parcels/:parcelId/confirm-cod', verifyApiKey, parcelController.confirmCodForChatbot);
 
 
 module.exports = router;

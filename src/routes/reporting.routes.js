@@ -7,5 +7,8 @@ const { verifyToken, isAdmin } = require('../middleware/auth.middleware.js');
 
 
 router.get('/stats/bookings', [verifyToken, isAdmin], reportingController.getBookingStats);
+router.get('/reports/delivered-parcels', [verifyToken, isAdmin], reportingController.getParcelsReport);
+router.get('/stats/revenue', [verifyToken, isAdmin], reportingController.getRevenueStats);
+
 
 module.exports = router;

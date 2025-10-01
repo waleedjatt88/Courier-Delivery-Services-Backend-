@@ -5,9 +5,7 @@ const path = require('path');
 const prepareCheckout = async (req, res) => {
   try {
     const parcelData = req.body;
-
     const customerId = req.user.id;
-
     if (
       !parcelData.pickupAddress ||
       !parcelData.deliveryAddress ||
@@ -22,7 +20,6 @@ const prepareCheckout = async (req, res) => {
     }
 
     const parcel = await parcelService.prepareCheckout(parcelData, customerId);
-
     res
       .status(201)
       .json({ message: "Parcel booked successfully!", parcel: parcel });
@@ -38,14 +35,11 @@ const confirmCodBooking = async (req, res) => {
     try {
         const customerId = req.user.id; 
         const parcelId = req.params.id; 
-
         const confirmedParcel = await parcelService.confirmCodBooking(parcelId, customerId);
-
         res.status(200).json({ 
             message: "Your COD order has been confirmed successfully!", 
             parcel: confirmedParcel 
         });
-
     } catch (error) {
         if (error.message.includes("Invalid parcel")) {
             return res.status(404).json({ message: error.message });
@@ -53,8 +47,6 @@ const confirmCodBooking = async (req, res) => {
         res.status(500).json({ message: "Failed to confirm COD order." });
     }
 };
-
-
 
 const getMyParcels = async (req, res) => {
   try {
@@ -84,9 +76,7 @@ const cancelParcel = async (req, res) => {
   try {
     const customerId = req.user.id;
     const parcelId = req.params.id; 
-
     const cancelledParcel = await parcelService.cancelParcelByUser(parcelId, customerId);
-
     res.status(200).json({
       message: "Parcel has been successfully cancelled.",
       parcel: cancelledParcel,
@@ -107,16 +97,12 @@ const getInvoice = async (req, res) => {
   try {
     const parcelId = req.params.id;
     const user = req.user;
-
     const { type } = req.query;
     const relativePath = await parcelService.getInvoicePathForUser(parcelId, user, type);
-
     const fullPath = path.join(__dirname, '../../public', relativePath);
-
     if (fs.existsSync(fullPath)) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="invoice-${parcelId}.pdf"`);
-
       const fileStream = fs.createReadStream(fullPath);
       fileStream.pipe(res);
     } else {
@@ -141,44 +127,6 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-const prepareCheckoutForChatbot = async (req, res) => {
-    try {
-        const { customerId, parcelData } = req.body;
-        if (!customerId || !parcelData) {
-            return res.status(400).json({ message: "customerId and parcelData are required in the request body." });
-        }
-        const result = await parcelService.prepareCheckout(parcelData, customerId);
-        res.status(201).json(result);
-    } catch (error) {
-        console.error("Chatbot Checkout Error:", error);
-        res.status(500).json({ message: "Failed to create parcel from chatbot.", error: error.message });
-    }
-};
-const confirmCodForChatbot = async (req, res) => {
-    try {
-        const { customerId } = req.body;
-        const { parcelId } = req.params;
-
-        if (!customerId) {
-            return res.status(400).json({ message: "customerId is required in the request body." });
-        }
-        const confirmedParcel = await parcelService.confirmCodBooking(parcelId, customerId);
-        res.status(200).json({ 
-            message: "COD order has been confirmed successfully via Chatbot!", 
-            parcel: confirmedParcel 
-        });
-    } catch (error) {
-        console.error("Chatbot COD Confirmation Error:", error);
-        if (error.message.includes("Invalid parcel")) {
-            return res.status(404).json({ message: error.message });
-        }
-        res.status(500).json({ message: "Failed to confirm COD order from chatbot." });
-    }
-};
-
-
-
-
 module.exports = {
   prepareCheckout,
   confirmCodBooking,
@@ -187,7 +135,4 @@ module.exports = {
   cancelParcel,
   getInvoice,
   getDashboardStats,
-  prepareCheckoutForChatbot,
-  confirmCodForChatbot
-
 };

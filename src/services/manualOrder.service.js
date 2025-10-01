@@ -26,39 +26,60 @@ const prepareManualCheckout = async (customerData, parcelData) => {
         pickupSlot 
     } = parcelData;
 
-    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
-            throw new Error("Pickup zone, Delivery zone, and Delivery Type are required.");
-        }
-        if (deliveryType === 'scheduled' && !pickupSlot) {
-            throw new Error("Pickup Slot is required for scheduled delivery.");
-        }
-    
-        
-        const pickupPricing = await db.Pricing.findOne({ where: { zoneId: pickupZoneId } });
-        const deliveryPricing = await db.Pricing.findOne({ where: { zoneId: deliveryZoneId } });
-    
-        if (!pickupPricing || !deliveryPricing) {
-            throw new Error("Invalid zone provided. Pricing not available.");
-        }
-    
-        let totalCharge = 0;
-        if (pickupZoneId === deliveryZoneId) {
-            totalCharge = pickupPricing.baseFare;
-        } else {
-            totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
-        }
-    
-        const weightThreshold = 5;
-        if (packageWeight > weightThreshold) {
-            const perKgCharge = (pickupPricing.perKgCharge + deliveryPricing.perKgCharge) / 2;
-            const extraWeight = packageWeight - weightThreshold;
-            totalCharge += extraWeight * perKgCharge;
-        }
-    
-        if (deliveryType === 'instant') {
-            const expressPercent = (pickupPricing.expressChargePercent + deliveryPricing.expressChargePercent) / 2;
-            totalCharge *= (1 + (expressPercent / 100)); 
-        }
+   if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
+       throw new Error(
+         "Pickup zone, Delivery zone, and Delivery Type are required."
+       );
+     }
+     if (deliveryType === "scheduled" && !pickupSlot) {
+       throw new Error("Pickup Slot is required for scheduled delivery.");
+     }
+   
+     if (packageWeight > 50) {
+         throw new Error("Maximum weight limit is 50kg. Please contact support for heavier parcels.");
+     }
+     const pickupPricing = await db.Pricing.findOne({
+       where: { zoneId: pickupZoneId },
+     });
+     const deliveryPricing = await db.Pricing.findOne({
+       where: { zoneId: deliveryZoneId },
+     });
+   
+     if (!pickupPricing || !deliveryPricing) {
+       throw new Error("Invalid zone provided. Pricing not available.");
+     }
+   
+     let totalCharge = 0;
+     if (pickupZoneId === deliveryZoneId) {
+       totalCharge = pickupPricing.baseFare;
+     } else {
+       totalCharge = pickupPricing.baseFare + deliveryPricing.baseFare;
+     }
+     if (packageWeight > 5) {
+         const weightSlab = await db.WeightSlab.findOne({
+             where: {
+                 minWeight: { [Op.lt]: packageWeight }, 
+                 maxWeight: { [Op.gte]: packageWeight } 
+             }
+         });
+   
+         if (weightSlab) {
+             totalCharge += weightSlab.charge;
+         } else if (packageWeight <= 50) { 
+             console.warn(`No weight slab found for weight: ${packageWeight}kg. Extra weight charge not applied.`);
+         }
+     }
+   
+     if (deliveryType === "instant") {
+       const expressPercent =
+         (pickupPricing.expressChargePercent +
+           deliveryPricing.expressChargePercent) /
+         2;
+       if (expressPercent > 0) {
+           totalCharge *= 1 + expressPercent / 100;
+       }
+     }
+   
 
     const trackingNumber = `PK-${uuidv4().split('-').pop().toUpperCase()}`;
     const parcel = await BookingParcel.create({

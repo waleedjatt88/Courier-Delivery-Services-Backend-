@@ -4,13 +4,11 @@ const StaticPage = db.StaticPage;
 const createStaticPage = async (pageData) => {
   return await StaticPage.create(pageData);
 };
-
 const getAllStaticPages = async () => {
   return await StaticPage.findAll({
     order: [['pageType', 'ASC']]
   });
 };
-
 const getStaticPageByType = async (pageType) => {
   const page = await StaticPage.findOne({ where: { pageType } });
   if (!page) {

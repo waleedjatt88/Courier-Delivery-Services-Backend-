@@ -17,26 +17,21 @@ const getUserById = async (id) => {
   return user;
 };
 
-
 const updateUser = async (userId, updateData, file) => {
     const user = await User.findByPk(userId);
     if (!user) {
         throw new Error("User not found");
     }
-
     if (updateData.role) {
         if (updateData.role === 'admin' || updateData.role === 'agent') {
             updateData.isVerified = true;
         }
     }
-    
     await user.update(updateData);
-
     if (file) {
         const oldPicture = await Media.findOne({
             where: { relatedId: userId, relatedType: 'user', mediaType: 'PROFILE_PICTURE' } 
         });
-
         if (oldPicture) {
             try {
                 const relativePath = oldPicture.url.startsWith('/') ? oldPicture.url.substring(1) : oldPicture.url;
@@ -48,7 +43,6 @@ const updateUser = async (userId, updateData, file) => {
             }
             await oldPicture.destroy();
         }
-
         await Media.create({
             url: `/images/${file.filename}`, 
             mediaType: 'PROFILE_PICTURE',
@@ -56,11 +50,9 @@ const updateUser = async (userId, updateData, file) => {
             relatedType: 'user'
         });
     }
-
     const updatedUserWithDetails = await getUserById(userId);
     return updatedUserWithDetails;
 };
-
 
 module.exports = {
     getUserById,
