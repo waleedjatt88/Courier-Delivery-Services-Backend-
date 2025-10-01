@@ -87,7 +87,9 @@ const generateParcelsReport = async () => {
             'trackingNumber',
             'deliveryCharge',
             'paymentStatus',
-            'paymentMethod'
+            'paymentMethod',
+             'updatedAt' 
+
         ],
         include: {
             model: User,
@@ -103,7 +105,9 @@ const generateParcelsReport = async () => {
         deliveryCharge: parcel.deliveryCharge,
         paymentStatus: parcel.paymentStatus,
         paymentMethod: parcel.paymentMethod,
-        bookingStatus: 'delivered'
+        bookingStatus: 'delivered',
+        lastUpdate: parcel.updatedAt 
+
     }));
     return report;
 };
