@@ -267,6 +267,42 @@ const getParcelById = async (parcelId) => {
   return parcel;
 };
 
+const getAgentParcelsByType = async (agentId, filterType) => {
+    const queryOptions = {
+        where: {
+            agentId: agentId
+        },
+        order: [['assignedAt', 'DESC']], 
+        include: {
+            model: db.User,
+            as: 'Customer',
+            attributes: ['fullName', 'phoneNumber', 'address'] 
+        }
+    };
+    switch (filterType) {
+        case 'pending':
+            queryOptions.where.status = 'order_placed';
+            queryOptions.where.agentAcceptanceStatus = 'pending';
+            break;
+        case 'active':
+            queryOptions.where.status = {
+                [Op.in]: ['scheduled', 'picked_up', 'in_transit', 'out_for_delivery']
+            };
+            break;
+        case 'completed':
+            queryOptions.where.status = 'delivered';
+            break;
+        default:
+            queryOptions.where.status = {
+                [Op.notIn]: ['cancelled', 'unconfirmed']
+            };
+            break;
+    }
+    const parcels = await db.BookingParcel.findAll(queryOptions);
+    return parcels;
+};
+
+
 const assignAgentToParcel = async (parcelId, agentId) => {
   const parcel = await db.BookingParcel.findByPk(parcelId);
   if (!parcel) {
@@ -306,21 +342,6 @@ const assignAgentToParcel = async (parcelId, agentId) => {
   parcel.agentRejectionReason = null;
   await parcel.save();
   return parcel;
-};
-
-const getParcelsByAgentId = async (agentId) => {
-  const parcels = await db.BookingParcel.findAll({
-    where: {
-      agentId: agentId,
-    },
-        order: [['id', 'DESC']], 
-    include: {
-      model: db.User,
-      as: "Customer",
-      attributes: ["fullName", "phoneNumber"],
-    },
-  });
-  return parcels;
 };
 
 const getParcelFiles = async (parcelId, customerId) => {
@@ -662,7 +683,6 @@ module.exports = {
   getAllParcels,
   getParcelById,
   assignAgentToParcel,
-  getParcelsByAgentId,
   updateParcelStatusByAgent,
   getParcelFiles,
   cancelParcelByAdmin,
@@ -674,4 +694,5 @@ module.exports = {
   getInvoicePathForUser,
   getAllInvoicePaths,
   getCustomerDashboardStats,
+  getAgentParcelsByType
 };

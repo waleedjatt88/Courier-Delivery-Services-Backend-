@@ -45,17 +45,6 @@ const rejectJob = async (req, res) => {
 };
 
 
-const getMyEarnings = async (req, res) => {
-    try {
-        const agentId = req.user.id;
-        const period = req.query.period || 'daily';
-        const earnings = await reportingService.getAgentEarnings(agentId, period);
-        res.status(200).json(earnings);
-    } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch earnings.' });
-    }
-};
-
 const updateParcelStatus = async (req, res) => {
     try {
         const parcel = await parcelService.updateParcelStatusByAgent(
@@ -69,11 +58,23 @@ const updateParcelStatus = async (req, res) => {
     }
 };
 
+const getMyTasks = async (req, res) => {
+    try {
+        const agentId = req.user.id; 
+        const { type } = req.query; 
+        const parcels = await parcelService.getAgentParcelsByType(agentId, type);
+        res.status(200).json(parcels);
+    } catch (error) {
+        console.error("Agent: Error fetching tasks:", error);
+        res.status(500).json({ message: "Failed to fetch tasks." });
+    }
+};
+
 module.exports = {
     getMyAssignedParcels,
     getMyParcelDetails ,
     acceptJob,
     rejectJob,
-    getMyEarnings,
-    updateParcelStatus
+    updateParcelStatus,
+    getMyTasks
 };

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/admin.controller.js");
 const authController = require("../controllers/auth.controller.js");
-const staticPageController = require('../controllers/static-page.controller.js');
+const pageController = require('../controllers/page.controller.js'); 
 
 
 const {
@@ -37,11 +37,11 @@ router.patch("/pricing/:id", [verifyToken, isAdmin], adminController.updatePrici
 router.get('/pricing/commission/agent', [verifyToken, isAdmin], adminController.getAgentCommission);
 router.patch('/pricing/commission/agent', [verifyToken, isAdmin], adminController.updateAgentCommission);
 
-router.get("/static-pages", [verifyToken, isAdmin], staticPageController.getAllStaticPages);
-router.post("/static-pages", [verifyToken, isAdmin], staticPageController.createStaticPage);
-router.get("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.getStaticPageByType);
-router.patch("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.updateStaticPage);
-router.delete("/static-pages/:pageType", [verifyToken, isAdmin], staticPageController.deleteStaticPage);
+router.get('/pages', [verifyToken, isAdmin], pageController.getAllPages);
+router.patch('/pages/:slug', [verifyToken, isAdmin], pageController.updatePage);
+router.patch('/pages/:slug/sections/:sectionId', [verifyToken, isAdmin], pageController.updateSection);
+router.delete('/pages/:slug/sections/:sectionId', [verifyToken, isAdmin], pageController.deleteSection);
+router.post('/pages/:slug/sections', [verifyToken, isAdmin], pageController.addSection);
 
 
 router.get('/stats/agents', [verifyToken, isAdmin], adminController.getAgentStats);
@@ -52,7 +52,6 @@ router.get('/stats/performance', [verifyToken, isAdmin], adminController.getOver
 router.post("/manual-orders/prepare", [verifyToken, isAdmin], adminController.prepareManualOrder);
 router.patch("/manual-orders/:id/confirm-cash", [verifyToken, isAdmin], adminController.confirmPayNowOrder);
 router.post("/manual-orders/:id/send-link", [verifyToken, isAdmin], adminController.sendPaymentLink);
-
 router.patch('/parcels/:id/confirm-cod-payment', [verifyToken, isAdmin], adminController.confirmCodPayment);
 
 

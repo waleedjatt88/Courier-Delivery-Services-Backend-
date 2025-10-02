@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const sendEmail = require('./notification.service.js');
 const invoiceService = require('./invoice.service.js');
 const stripeService = require('./payment.service.js'); 
+const { Op } = require('sequelize');
 
 
 

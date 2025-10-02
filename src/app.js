@@ -26,6 +26,7 @@ const { autoRejectJob } = require('./scheduler.js');
 const reportingRoutes = require("./routes/reporting.routes.js");
 const weightSlabRoutes = require("./routes/weightslab.routes.js"); 
 
+
 const initializeSocket = require('./socket-handler.js');
 
 // SERVER & SOCKET.IO SETUP
@@ -88,6 +89,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api', publicRoutes);
 app.use("/api/reporting", reportingRoutes);
 app.use("/api/admin/weight-slabs", weightSlabRoutes); 
+
 
 
 app.get("/", (req, res) => {

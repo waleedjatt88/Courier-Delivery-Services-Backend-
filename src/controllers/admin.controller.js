@@ -14,8 +14,7 @@ const getAllUsers = async (req, res) => {
         res.status(200).json(users);
     } catch (error) {
         res.status(400).json({ message: error.message });
-    }
-};
+    }};
 
 const deleteUser = async (req, res) => {
     try {
@@ -26,8 +25,7 @@ const deleteUser = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(500).json({ message: "Server error: " + error.message });
-    }
-};
+    }};
 
 const getAllParcels = async (req, res) => {
     try {
@@ -37,8 +35,7 @@ const getAllParcels = async (req, res) => {
     } catch (error) {
         console.error("Admin: Error fetching all parcels:", error);
         res.status(500).json({ message: "Failed to fetch parcels." });
-    }
-};
+    }};
 
 const getParcelById = async (req, res) => {
     try {
@@ -51,8 +48,7 @@ const getParcelById = async (req, res) => {
     } catch (error) {
         console.error("Admin: Error fetching parcel by ID:", error);
         res.status(500).json({ message: "Failed to fetch parcel." });
-    }
-};
+    }};
 
 const updateUser = async (req, res) => {
     try {
@@ -65,8 +61,7 @@ const updateUser = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(500).json({ message: "Server error: " + error.message });
-    }
-};
+    }};
 
 const assignAgent = async (req, res) => {
     try {
@@ -85,8 +80,7 @@ const assignAgent = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(400).json({ message: "Assignment failed: " + error.message });
-    }
-};
+    }};
 
 const blockUser = async (req, res) => {
     try {
@@ -112,8 +106,7 @@ const suspendUser = async (req, res) => {
         });
     } catch (error) { 
         res.status(400).json({ message: error.message }); 
-    }
-};
+    }};
 
 const unsuspendUser = async (req, res) => {
     try {
@@ -138,8 +131,7 @@ const getAllTickets = async (req, res) => {
             message: "Failed to fetch tickets.",
             error: error.message || "Internal Server Error",
         });
-    }
-};
+    }};
 
 const getTicketById = async (req, res) => {
     try {
@@ -147,8 +139,7 @@ const getTicketById = async (req, res) => {
         res.status(200).json({ ticket });
     } catch (error) {
         res.status(404).json({ message: error.message });
-    }
-};
+    }};
 
 const updateTicketStatus = async (req, res) => {
     try {
@@ -157,8 +148,7 @@ const updateTicketStatus = async (req, res) => {
         res.status(200).json({ message: "Ticket status updated.", ticket });
     } catch (error) {
         res.status(400).json({ message: error.message });
-    }
-};
+    }};
 
 const getPricingRules = async (req, res) => {
     try {
@@ -166,16 +156,14 @@ const getPricingRules = async (req, res) => {
         res.status(200).json({ pricingRules: rules });
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch pricing rules." });
-    }
-};
+    }};
 const getAgentCommission = async (req, res) => {
     try {
         const commission = await pricingService.getAgentCommission();
         res.status(200).json(commission);
     } catch (error) {
         res.status(500).json({ message: error.message });
-    }
-};
+    }};
 
 const updateAgentCommission = async (req, res) => {
     try {
@@ -184,8 +172,7 @@ const updateAgentCommission = async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         res.status(400).json({ message: error.message });
-    }
-};
+    }};
 
 const updatePricingRule = async (req, res) => {
     try {
@@ -198,8 +185,7 @@ const updatePricingRule = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(400).json({ message: "Update failed: " + error.message });
-    }
-};
+    }};
 
 const cancelParcel = async (req, res) => {
     try {
@@ -214,8 +200,7 @@ const cancelParcel = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(400).json({ message: "Cancellation failed: " + error.message });
-    }
-};
+    }};
 
      const rescheduleParcel = async (req, res) => {
     try {
@@ -234,8 +219,7 @@ const cancelParcel = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(400).json({ message: "RescheduleParcel failed: " + error.message });
-    }
-};
+    }};
 
 const getGlobalStats = async (req, res) => {
     try {
@@ -244,8 +228,7 @@ const getGlobalStats = async (req, res) => {
     } catch (error) {
         console.error("Admin: Error fetching global stats:", error);
         res.status(500).json({ message: "Failed to fetch global statistics." });
-    }
-};
+    }};
 
 const prepareManualOrder = async (req, res) => {
     try {

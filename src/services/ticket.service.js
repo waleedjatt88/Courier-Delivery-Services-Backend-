@@ -64,6 +64,9 @@ const getTicketById = async (ticketId) => {
 const updateTicketStatus = async (ticketId, newStatus) => {
     const ticket = await db.Ticket.findByPk(ticketId);
     if (!ticket) throw new Error("Ticket not found.");
+    if (ticket.status === 'closed') {
+        throw new Error("This ticket is already closed.");
+    }
     const allowedStatuses = ['in_progress', 'closed'];
     if (!allowedStatuses.includes(newStatus)) {
         throw new Error("Invalid status provided.");
