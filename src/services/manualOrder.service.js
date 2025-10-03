@@ -7,8 +7,6 @@ const invoiceService = require('./invoice.service.js');
 const stripeService = require('./payment.service.js'); 
 const { Op } = require('sequelize');
 
-
-
 const prepareManualCheckout = async (customerData, parcelData) => {
     let customer = await User.findOne({ where: { email: customerData.email } });
     if (!customer) {
@@ -63,14 +61,11 @@ const prepareManualCheckout = async (customerData, parcelData) => {
                  maxWeight: { [Op.gte]: packageWeight } 
              }
          });
-   
          if (weightSlab) {
              totalCharge += weightSlab.charge;
          } else if (packageWeight <= 50) { 
              console.warn(`No weight slab found for weight: ${packageWeight}kg. Extra weight charge not applied.`);
-         }
-     }
-   
+         }}
      if (deliveryType === "instant") {
        const expressPercent =
          (pickupPricing.expressChargePercent +
@@ -78,10 +73,7 @@ const prepareManualCheckout = async (customerData, parcelData) => {
          2;
        if (expressPercent > 0) {
            totalCharge *= 1 + expressPercent / 100;
-       }
-     }
-   
-
+       }}
     const trackingNumber = `PK-${uuidv4().split('-').pop().toUpperCase()}`;
     const parcel = await BookingParcel.create({
         ...parcelData,
@@ -92,11 +84,8 @@ const prepareManualCheckout = async (customerData, parcelData) => {
         paymentStatus: 'pending',
         bookingsource: 'manual' 
     });
-
     return { parcelId: parcel.id, totalCharges: parcel.deliveryCharge };
 };
-
-
 
 const confirmPayNow = async (parcelId) => {
     const parcel = await BookingParcel.findOne({ 
@@ -108,17 +97,13 @@ const confirmPayNow = async (parcelId) => {
         ] 
     });
     try {
-
     if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
-
         parcel.paymentMethod = 'CASH';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed';
         await parcel.save();
-
         const invoiceUrl = invoiceService.generateBookingInvoice(parcel, parcel.Customer);
         await Media.create({ url: invoiceUrl, mediaType: 'BOOKING_INVOICE', relatedId: parcel.id, relatedType: 'parcel' });
-        
         await sendEmail({
             email: parcel.Customer.email,  
             subject: `Parcel Booked! Tracking ID: ${parcel.trackingNumber}`,
@@ -133,21 +118,16 @@ const confirmPayNow = async (parcelId) => {
                 paymentMethod: parcel.paymentMethod
             }           
         });
-        
         return parcel;
     } catch (error) {
         console.error("!!! Invoice/Email Error on COD confirm:", error);
         throw error;  
-    }
-};
-
+    }};
 
 const sendPaymentLink = async (parcelId) => {
     const parcel = await BookingParcel.findOne({ where: { id: parcelId, status: 'unconfirmed' }, include: ['Customer'] });
     if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
-
     const session = await stripeService.createCheckoutSession(parcel.id, parcel.customerId);
-    
    await sendEmail({
         email: parcel.Customer.email,
         subject: `Payment Required for Your Order #${parcel.trackingNumber}`,
@@ -159,7 +139,6 @@ const sendPaymentLink = async (parcelId) => {
             paymentUrl: session.checkoutUrl 
         }
     });
-
     return { message: "Payment link has been sent to the customer." };
 };
 

@@ -10,8 +10,7 @@ const storage = multer.diskStorage({
     cb(
       null,
       `user-${req.user.id}-${uniqueSuffix}${path.extname(file.originalname)}`
-    );
-  },
+    );},
 });
 
 const fileFilter = (req, file, cb) => {
@@ -24,8 +23,7 @@ const fileFilter = (req, file, cb) => {
     return cb(null, true);
   } else {
     cb(new Error("Only image files are allowed!"));
-  }
-};
+  }};
 
 const upload = multer({
   storage: storage,

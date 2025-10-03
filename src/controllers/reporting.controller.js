@@ -22,8 +22,7 @@ const getParcelsReport = async (req, res) => {
     } catch (error) {
         console.error("Error generating parcels report:", error);
         res.status(500).json({ message: "Failed to generate parcels report." });
-    }
-};
+    }};
 
 const getRevenueStats = async (req, res) => {
     try {
@@ -35,8 +34,20 @@ const getRevenueStats = async (req, res) => {
     }
 };
 
+const getUserFraudReport = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const reportData = await reportingService.generateUserFraudReport(customerId);
+        res.status(200).json(reportData);
+    } catch (error) {
+        console.error("Error generating user fraud report:", error);
+        res.status(500).json({ message: "Failed to generate user fraud report." });
+    }
+};
+
 module.exports = {
     getBookingStats,
     getParcelsReport,
-    getRevenueStats
+    getRevenueStats,
+    getUserFraudReport
 };

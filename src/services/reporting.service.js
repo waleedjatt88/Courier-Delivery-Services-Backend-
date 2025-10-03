@@ -113,32 +113,72 @@ const generateParcelsReport = async () => {
 };
 
 const getRevenueStats = async () => {
+        const whereClause = {
+        status: {
+            [Op.notIn]: ['unconfirmed', 'cancelled']
+        }
+    };
     const revenueResult = await BookingParcel.findOne({
         attributes: [
-            [
-                Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status NOT IN ('unconfirmed', 'cancelled') THEN \"deliveryCharge\" ELSE 0 END")), 
-                'totalRevenue'
-            ],
+            [ Sequelize.fn('SUM', Sequelize.col('deliveryCharge')), 'totalRevenue' ],
             [
                 Sequelize.fn('SUM', Sequelize.literal("CASE WHEN \"paymentStatus\" = 'completed' THEN \"deliveryCharge\" ELSE 0 END")), 
                 'collectedRevenue'
             ],
             [
-                Sequelize.fn('SUM', Sequelize.literal("CASE WHEN \"paymentStatus\" = 'pending' AND status NOT IN ('unconfirmed', 'cancelled') THEN \"deliveryCharge\" ELSE 0 END")), 
+                Sequelize.fn('SUM', Sequelize.literal("CASE WHEN \"paymentStatus\" = 'pending' THEN \"deliveryCharge\" ELSE 0 END")), 
                 'pendingRevenue'
-            ]
+            ],
+            [ Sequelize.fn('SUM', Sequelize.col('agentCommission')), 'totalAgentCommission' ],            
+            [ Sequelize.fn('SUM', Sequelize.col('remainingAmount')), 'totalRemainingAmount' ]
         ],
+        where: whereClause, 
         raw: true
     });
+
     const stats = {
         totalRevenue: parseFloat(revenueResult.totalRevenue) || 0,
         collectedRevenue: parseFloat(revenueResult.collectedRevenue) || 0,
         pendingRevenue: parseFloat(revenueResult.pendingRevenue) || 0,
+        totalAgentCommission: parseFloat(revenueResult.totalAgentCommission) || 0,
+        totalRemainingAmount: parseFloat(revenueResult.totalRemainingAmount) || 0,
     };
     return stats;
 };
+
+const generateUserFraudReport = async (customerId) => {
+    const statsResult = await BookingParcel.findOne({
+        where: {
+            customerId: customerId
+        },
+        attributes: [
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalAttempts'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'cancelled' AND \"paymentStatus\" = 'cancelled' THEN 1 ELSE 0 END")), 'num_cancellations'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'unconfirmed' THEN 1 ELSE 0 END")), 'num_of_unconfirmed_parcels']
+        ],
+        raw: true
+    });
+    const totalAttempts = parseInt(statsResult.totalAttempts, 10) || 0;
+    const numCancellations = parseInt(statsResult.num_cancellations, 10) || 0;
+    const numOfUnconfirmedParcels = parseInt(statsResult.num_of_unconfirmed_parcels, 10) || 0;
+    const totalFailedAttempts = numCancellations + numOfUnconfirmedParcels;
+     let paymentFailRatio = 0.0; 
+    if (totalAttempts > 0) {
+        const ratio = totalFailedAttempts / totalAttempts;
+        paymentFailRatio = parseFloat(ratio.toFixed(2)); 
+    }
+    const report = {
+        customerId: parseInt(customerId, 10),
+        num_cancellations: numCancellations,
+        num_of_unconfirmed_parcels: numOfUnconfirmedParcels,
+        payment_fail_ratio: paymentFailRatio, 
+    };
+    return report;
+};
+
 module.exports = {
     getBookingStats,
     generateParcelsReport,
-    getRevenueStats
+    getRevenueStats,
+    generateUserFraudReport
 };

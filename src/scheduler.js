@@ -15,13 +15,11 @@ const autoRejectJob = cron.schedule('* * * * *', async () => {
             agentRejectionReason: 'Auto-rejected: No response within 10 minutes',
             status: 'order_placed',
             agentId: null 
-        },
-        {
+        },{
             where: {
                 agentAcceptanceStatus: 'pending',
                 assignedAt: { [Op.lte]: tenMinutesAgo } 
-            }
-        }
+            }}
     );
     if (affectedRows > 0) {
         console.log(`Auto-rejected ${affectedRows} parcel(s) due to timeout`);
