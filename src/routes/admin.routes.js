@@ -54,5 +54,7 @@ router.patch("/manual-orders/:id/confirm-cash", [verifyToken, isAdmin], adminCon
 router.post("/manual-orders/:id/send-link", [verifyToken, isAdmin], adminController.sendPaymentLink);
 router.patch('/parcels/:id/confirm-cod-payment', [verifyToken, isAdmin], adminController.confirmCodPayment);
 
+router.patch('/users/:userId/flags', [verifyToken, isAdmin], adminController.setUserFlag);
+
 
 module.exports = router;

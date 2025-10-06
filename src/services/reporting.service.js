@@ -145,40 +145,52 @@ const getRevenueStats = async () => {
     };
     return stats;
 };
-
-const generateUserFraudReport = async (customerId) => {
-    const statsResult = await BookingParcel.findOne({
-        where: {
-            customerId: customerId
-        },
+ 
+const generateAllUsersFraudReport = async () => {
+        const allStats = await BookingParcel.findAll({
         attributes: [
+            'customerId',
             [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalAttempts'],
             [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'cancelled' AND \"paymentStatus\" = 'cancelled' THEN 1 ELSE 0 END")), 'num_cancellations'],
             [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'unconfirmed' THEN 1 ELSE 0 END")), 'num_of_unconfirmed_parcels']
         ],
+        group: ['customerId'], 
         raw: true
     });
-    const totalAttempts = parseInt(statsResult.totalAttempts, 10) || 0;
-    const numCancellations = parseInt(statsResult.num_cancellations, 10) || 0;
-    const numOfUnconfirmedParcels = parseInt(statsResult.num_of_unconfirmed_parcels, 10) || 0;
-    const totalFailedAttempts = numCancellations + numOfUnconfirmedParcels;
-     let paymentFailRatio = 0.0; 
-    if (totalAttempts > 0) {
-        const ratio = totalFailedAttempts / totalAttempts;
-        paymentFailRatio = parseFloat(ratio.toFixed(2)); 
-    }
-    const report = {
-        customerId: parseInt(customerId, 10),
-        num_cancellations: numCancellations,
-        num_of_unconfirmed_parcels: numOfUnconfirmedParcels,
-        payment_fail_ratio: paymentFailRatio, 
-    };
-    return report;
+    const allCustomers = await User.findAll({
+        where: { role: 'customer' },
+        attributes: ['id',], 
+        raw: true
+    });
+    const statsMap = new Map(allStats.map(stat => [stat.customerId, stat]));
+    const fullReport = allCustomers.map(customer => {
+        const stats = statsMap.get(customer.id) || {
+            totalAttempts: 0,
+            num_cancellations: 0,
+            num_of_unconfirmed_parcels: 0
+        };
+        const totalAttempts = parseInt(stats.totalAttempts, 10);
+        const numCancellations = parseInt(stats.num_cancellations, 10);
+        const numOfUnconfirmedParcels = parseInt(stats.num_of_unconfirmed_parcels, 10);
+        const totalFailedAttempts = numCancellations + numOfUnconfirmedParcels;
+        let paymentFailRatio = 0.0;
+        if (totalAttempts > 0) {
+            const ratio = totalFailedAttempts / totalAttempts;
+            paymentFailRatio = parseFloat(ratio.toFixed(2));
+        }
+        return {
+            customerId: customer.id,
+            num_cancellations: numCancellations,
+            num_of_unconfirmed_parcels: numOfUnconfirmedParcels,
+            payment_fail_ratio: paymentFailRatio,
+        };
+    });
+    return fullReport;
 };
 
 module.exports = {
     getBookingStats,
     generateParcelsReport,
     getRevenueStats,
-    generateUserFraudReport
+    generateAllUsersFraudReport
 };

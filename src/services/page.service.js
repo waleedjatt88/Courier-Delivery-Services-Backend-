@@ -12,11 +12,23 @@ const getPageBySlug = async (slug) => {
 };
 
 const getAllPagesForAdmin = async () => {
-    return await Page.findAll({
+    const pagesArray = await Page.findAll({
         order: [['id', 'ASC']]
     });
-};
 
+    const pagesObject = {};
+    for (const page of pagesArray) {
+        const key = page.slug;
+                pagesObject[key] = {
+            id: page.id,
+            title: page.title,
+            content: page.content,
+            createdAt: page.createdAt,
+            updatedAt: page.updatedAt
+        };
+    }
+    return pagesObject;
+};
 const updatePageBySlug = async (slug, data) => {
     const page = await Page.findOne({ where: { slug: slug } });
     if (!page) {
@@ -39,18 +51,21 @@ const updatePageBySlug = async (slug, data) => {
 const updatePageSection = async (slug, sectionId, sectionData) => {
     const page = await Page.findOne({ where: { slug: slug } });
     if (!page) throw new Error("Page not found.");
-    const content = page.content; 
+    let content = page.content;
     if (!content.sections || !Array.isArray(content.sections)) {
         throw new Error("This page does not have a valid sections structure.");
     }
     const sectionIndex = content.sections.findIndex(s => s.id === sectionId);
-    if (sectionIndex === -1) {
-        throw new Error("Section with the given ID not found.");
-    }
-    content.sections[sectionIndex] = { ...content.sections[sectionIndex], ...sectionData };
-        await page.update({ content });
-    return page.content.sections[sectionIndex]; 
+    if (sectionIndex === -1) throw new Error(`Section with ID "${sectionId}" not found.`);
+    const updatedSection = { ...content.sections[sectionIndex], ...sectionData };
+    content.sections[sectionIndex] = updatedSection;
+    await Page.update(
+        { content: content }, 
+        { where: { slug: slug }} 
+    );
+    return updatedSection;
 };
+
 
 const deletePageSection = async (slug, sectionId) => {
     const page = await Page.findOne({ where: { slug } });

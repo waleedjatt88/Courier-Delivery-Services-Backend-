@@ -214,6 +214,21 @@ const getOverallPerformanceStats = async () => {
     };
 };
 
+const setUserSuspiciousFlag = async (userId, isSuspicious) => {
+    const user = await User.findByPk(userId);
+    if (!user) {
+        throw new Error("User not found.");
+    }
+    if (typeof isSuspicious !== 'boolean') {
+        throw new Error("isSuspicious flag must be a boolean (true or false).");
+    }
+    user.isSuspicious = isSuspicious;
+    await user.save();
+    const userResult = user.toJSON();
+    delete userResult.passwordHash;
+    return userResult;
+};
+
 
 
 module.exports = {
@@ -226,5 +241,6 @@ module.exports = {
     unsuspendUser,
     getAgentStats,
     getGlobalParcelStats,
-    getOverallPerformanceStats
+    getOverallPerformanceStats,
+    setUserSuspiciousFlag
 };

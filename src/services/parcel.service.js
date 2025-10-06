@@ -537,15 +537,25 @@ const rejectJobByAgent = async (parcelId, agentId, reason) => {
   const parcel = await db.BookingParcel.findOne({
     where: { id: parcelId, agentId: agentId },
   });
-  if (!parcel) throw new Error("Parcel not found or not assigned to you.");
+  if (!parcel) {
+    throw new Error("Parcel not found or not assigned to you.");
+  }
   if (parcel.agentAcceptanceStatus === "accepted") {
     throw new Error("You cannot reject a job after accepting it.");
   }
+  if (parcel.agentAcceptanceStatus === "rejected") {
+    return {
+      message: "This job has already been rejected.",
+      parcel,
+    };}
   parcel.agentAcceptanceStatus = "rejected";
   parcel.agentRejectionReason = reason;
   parcel.status = "order_placed";
   await parcel.save();
-  return parcel;
+  return {
+    message: "Job rejected successfully.",
+    parcel,
+  };
 };
 
 const confirmCodPaymentByAdmin = async (parcelId) => {

@@ -288,6 +288,17 @@ const getOverallPerformanceStats = async (req, res) => {
     }
 };
 
+const setUserFlag = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { isSuspicious } = req.body;
+        const user = await adminService.setUserSuspiciousFlag(userId, isSuspicious);
+        res.status(200).json({ message: "User suspicious flag updated successfully.", user });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getAllUsers,
     deleteUser,
@@ -314,5 +325,6 @@ module.exports = {
     getGlobalStats,
     getOverallPerformanceStats,
     getAgentCommission,
-    updateAgentCommission
+    updateAgentCommission,
+    setUserFlag,
 };

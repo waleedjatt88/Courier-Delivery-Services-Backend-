@@ -100,7 +100,12 @@ address: {
   type: DataTypes.TEXT,
   allowNull: true,
   defaultValue: null
-}
+},
+ isSuspicious: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    }
     
 
   }, { 

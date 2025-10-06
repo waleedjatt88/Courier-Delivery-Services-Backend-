@@ -34,14 +34,13 @@ const getRevenueStats = async (req, res) => {
     }
 };
 
-const getUserFraudReport = async (req, res) => {
+const getAllUsersFraudReport = async (req, res) => {
     try {
-        const { customerId } = req.params;
-        const reportData = await reportingService.generateUserFraudReport(customerId);
+        const reportData = await reportingService.generateAllUsersFraudReport();
         res.status(200).json(reportData);
     } catch (error) {
-        console.error("Error generating user fraud report:", error);
-        res.status(500).json({ message: "Failed to generate user fraud report." });
+        console.error("Error generating all users fraud report:", error);
+        res.status(500).json({ message: "Failed to generate all users fraud report." });
     }
 };
 
@@ -49,5 +48,5 @@ module.exports = {
     getBookingStats,
     getParcelsReport,
     getRevenueStats,
-    getUserFraudReport
+    getAllUsersFraudReport
 };
