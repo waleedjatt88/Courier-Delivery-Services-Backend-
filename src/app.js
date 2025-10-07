@@ -22,7 +22,7 @@ const ticketRoutes = require("./routes/ticket.routes.js");
 const chatRoutes = require('./routes/chat.routes.js');
 const paymentController = require("./controllers/payment.controller.js");
 const publicRoutes = require('./routes/public.routes.js');
-const { autoRejectJob } = require('./scheduler.js');
+const { autoRejectJob,unsuspendUsers } = require('./scheduler.js');
 const reportingRoutes = require("./routes/reporting.routes.js");
 const weightSlabRoutes = require("./routes/weightslab.routes.js"); 
 
@@ -95,6 +95,7 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   autoRejectJob.start();
+  unsuspendUsers.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
   // console.log(`Accessible on your network at: http://192.168.100.238:${PORT}`); 

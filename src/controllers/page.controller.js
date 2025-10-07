@@ -1,12 +1,15 @@
 const pageService = require('../services/page.service.js');
 
-const getPage = async (req, res) => {
+
+const getAllPublicPages = async (req, res) => {
     try {
-        const page = await pageService.getPageBySlug(req.params.slug);
-        res.status(200).json(page);
+        const pagesObject = await pageService.getAllPagesForPublic();
+        res.status(200).json(pagesObject);
     } catch (error) {
-        res.status(404).json({ message: error.message });
-    }};
+        console.error("Error fetching public pages list:", error);
+        res.status(500).json({ message: "Failed to fetch public pages." });
+    }
+};
 
 const getAllPages = async (req, res) => {
     try {
@@ -53,7 +56,7 @@ const addSection = async (req, res) => {
 
 
 module.exports = {
-    getPage,
+    getAllPublicPages,
     getAllPages,
     updatePage,
     updateSection,

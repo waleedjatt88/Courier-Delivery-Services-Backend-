@@ -3,19 +3,10 @@ const { Page } = db;
 const { v4: uuidv4 } = require('uuid'); 
 
 
-const getPageBySlug = async (slug) => {
-    const page = await Page.findOne({ where: { slug: slug } });
-    if (!page) {
-        throw new Error("Page not found.");
-    }
-    return page;
-};
-
-const getAllPagesForAdmin = async () => {
-    const pagesArray = await Page.findAll({
+const getAllPagesForPublic = async () => {
+     const pagesArray = await Page.findAll({
         order: [['id', 'ASC']]
     });
-
     const pagesObject = {};
     for (const page of pagesArray) {
         const key = page.slug;
@@ -25,10 +16,27 @@ const getAllPagesForAdmin = async () => {
             content: page.content,
             createdAt: page.createdAt,
             updatedAt: page.updatedAt
-        };
-    }
+        };}
     return pagesObject;
 };
+
+const getAllPagesForAdmin = async () => {
+    const pagesArray = await Page.findAll({
+        order: [['id', 'ASC']]
+    });
+    const pagesObject = {};
+    for (const page of pagesArray) {
+        const key = page.slug;
+                pagesObject[key] = {
+            id: page.id,
+            title: page.title,
+            content: page.content,
+            createdAt: page.createdAt,
+            updatedAt: page.updatedAt
+        };}
+    return pagesObject;
+};
+
 const updatePageBySlug = async (slug, data) => {
     const page = await Page.findOne({ where: { slug: slug } });
     if (!page) {
@@ -113,7 +121,7 @@ const addPageSection = async (slug, sectionData) => {
 
 
 module.exports = {
-    getPageBySlug,
+    getAllPagesForPublic,
     getAllPagesForAdmin,
     updatePageBySlug,
     updatePageSection,

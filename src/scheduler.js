@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const db = require('../models');
 const { Op } = require('sequelize');
+const { User } = db;
 
 console.log('Scheduler initialized.');
 
@@ -29,4 +30,32 @@ const autoRejectJob = cron.schedule('* * * * *', async () => {
   }
 });
 
-module.exports = { autoRejectJob };
+const unsuspendUsers = cron.schedule('0 1 * * *', async () => {
+    console.log(`🧹 Running  to unsuspend users at: ${new Date()}`);
+    try {
+        const [affectedCount] = await User.update(
+            { suspendedUntil: null }, 
+            {
+                where: {
+                    suspendedUntil: {
+                        [Op.ne]: null,      
+                        [Op.lt]: new Date() 
+                    }
+                }
+            }
+        );
+        if (affectedCount > 0) {
+            console.log(`✅ Successfully un-suspended ${affectedCount} user(s).`);
+        } else {
+            console.log('No users to unsuspend.');
+        }
+
+    } catch (error) {
+        console.error('!!! Error during unsuspend users :', error);
+    }
+}, {
+    scheduled: false 
+});
+
+
+module.exports = { autoRejectJob, unsuspendUsers };

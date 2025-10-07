@@ -4,41 +4,44 @@ const { Op, Sequelize } = require("sequelize");
 
 
 
-const getAllUsers = async (roleType = null) => {
+const getAllUsers = async (roleType = null, pageParam = 1, limitParam = 10) => {
+    const page = Math.max(parseInt(pageParam) || 1, 1);
+    const limit = Math.max(parseInt(limitParam) || 10, 1);
+    const offset = (page - 1) * limit;
     const whereClause = {};
-    if (roleType && roleType !== 'restricted') {
-        const validRoles = ['customer', 'agent', 'guest'];
-        if (!validRoles.includes(roleType)) {
-            throw new Error(`Invalid user type specified: ${roleType}`);
-        }
-        whereClause.role = roleType;
-    }
     if (roleType === 'restricted') {
         whereClause[Op.or] = [
-            { isActive: false }, 
-            { 
-                suspendedUntil: { 
-                    [Op.ne]: null,
-                    [Op.gt]: new Date()
-                }
-            }
+            { isActive: false },
+            { suspendedUntil: { [Op.ne]: null, [Op.gt]: new Date() } }
         ];
     } else {
         whereClause.isActive = true;
         whereClause.suspendedUntil = {
-            [Op.or]: {
-                [Op.eq]: null,
-                [Op.lt]: new Date()
-            }
+            [Op.or]: { [Op.eq]: null, [Op.lt]: new Date() }
         };
-    }
-    const users = await User.findAll({
+        if (roleType) {
+            const validRoles = ['customer', 'agent', 'guest'];
+            if (!validRoles.includes(roleType)) {
+                throw new Error(`Invalid user type specified: ${roleType}`);
+            }
+            whereClause.role = roleType;
+        }}
+    const { count, rows: users } = await User.findAndCountAll({
         where: whereClause,
         attributes: { exclude: ['passwordHash'] },
-        order: [['id', 'DESC']], 
+        order: [['id', 'ASC']],
+        limit,
+        offset
     });
-    return users;
-};
+    return {
+        users,
+        pagination: {
+            totalCounts: count,
+            currentPage: page,
+            itemsPerPage: limit,
+            totalPages: Math.ceil(count / limit),
+        }
+    };};
 
 
 const deleteUser = async (userId) => {
@@ -120,10 +123,6 @@ const unsuspendUser = async (userId) => {
     return user;
 };
 
-/**
- * 
- * @returns {Promise<object>}
- */
 const getAgentStats = async () => {
     const totalAgents = await User.count({
         where: {
@@ -158,10 +157,6 @@ const getAgentStats = async () => {
     };
 };
 
-/**
- * 
- * @returns {Promise<object>} 
- */
 const getGlobalParcelStats = async () => {
     const statsResult = await BookingParcel.findAll({
         attributes: [
@@ -175,20 +170,13 @@ const getGlobalParcelStats = async () => {
             [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'cancelled' AND \"paymentStatus\" IN ('pending', 'completed') THEN 1 ELSE 0 END")), 'cancelled']        ],
         raw: true
     });
-
     const stats = statsResult[0]; 
-
     for (const key in stats) {
         stats[key] = parseInt(stats[key], 10) || 0;
     }
-
     return stats;
 };
 
-/**
- * 
- * @returns {Promise<object>}
- */
 const getOverallPerformanceStats = async () => {
     const totalAssignedParcels = await BookingParcel.count({
         where: {
@@ -228,7 +216,6 @@ const setUserSuspiciousFlag = async (userId, isSuspicious) => {
     delete userResult.passwordHash;
     return userResult;
 };
-
 
 
 module.exports = {

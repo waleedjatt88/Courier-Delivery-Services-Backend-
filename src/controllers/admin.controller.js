@@ -9,12 +9,20 @@ const manualOrderService = require('../services/manualOrder.service.js');
 
 const getAllUsers = async (req, res) => {
     try {
-        const { type } = req.query;
-        const users = await adminService.getAllUsers(type);
-        res.status(200).json(users);
+        // YEH HAI SAHI LINE:
+        // 'type', 'page', aur 'limit' teeno ko query se nikaalein
+        const { type, page, limit } = req.query;
+
+        // Ab service function ko teeno arguments bhejein
+        const result = await adminService.getAllUsers(type, page, limit);
+        
+        res.status(200).json(result);
+
     } catch (error) {
+        console.error("!!!  ERROR in getAllUsers controller:", error); // Debugging ke liye
         res.status(400).json({ message: error.message });
-    }};
+    }
+};
 
 const deleteUser = async (req, res) => {
     try {
@@ -29,13 +37,20 @@ const deleteUser = async (req, res) => {
 
 const getAllParcels = async (req, res) => {
     try {
-        const { type } = req.query;
-        const parcels = await parcelService.getAllParcels(type);
-        res.status(200).json({ parcels: parcels });
+        // YEH HAI SAHI LINE:
+        // 'type', 'page', aur 'limit' teeno ko query se nikaalein
+        const { type, page, limit } = req.query;
+
+        // Ab service function ko teeno arguments bhejein
+        const result = await parcelService.getAllParcels(type, page, limit);
+        
+        res.status(200).json(result);
+
     } catch (error) {
         console.error("Admin: Error fetching all parcels:", error);
         res.status(500).json({ message: "Failed to fetch parcels." });
-    }};
+    }
+};
 
 const getParcelById = async (req, res) => {
     try {
