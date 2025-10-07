@@ -250,8 +250,6 @@ const getAllParcels = async (filterType = null, pageParam = 1, limitParam = 10) 
         limit: limit,
         offset: offset
     });
-
-    // 4. Sahi format mein response return karein
     return {
         parcels,
         pagination: {
@@ -665,8 +663,7 @@ const getCustomerDashboardStats = async (customerId) => {
       customerId: customerId,
       status: {
         [Op.in]: relevantStatuses,
-      },
-    },
+      },},
     group: ["status"],
     attributes: [
       "status",
@@ -700,6 +697,23 @@ const getCustomerDashboardStats = async (customerId) => {
   return stats;
 };
 
+const getTotalCommission = async (agentId) => {
+    const result = await BookingParcel.findOne({
+        where: {
+            agentId: agentId
+        },
+        attributes: [
+            [Sequelize.fn('SUM', Sequelize.col('agentCommission')), 'totalCommission']
+        ],
+        raw: true 
+    });
+    const totalCommission = parseFloat(result.totalCommission) || 0;
+    return {
+        totalCommission: totalCommission
+    };
+};
+
+
 module.exports = {
   prepareCheckout,
   confirmCodBooking,
@@ -718,5 +732,6 @@ module.exports = {
   getInvoicePathForUser,
   getAllInvoicePaths,
   getCustomerDashboardStats,
-  getAgentParcelsByType
+  getAgentParcelsByType,
+  getTotalCommission,
 };

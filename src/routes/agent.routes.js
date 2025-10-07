@@ -11,5 +11,7 @@ router.patch('/parcels/:id/status', [verifyToken, isAgent], agentController.upda
 router.patch('/parcels/:id/accept', [verifyToken, isAgent], agentController.acceptJob);
 router.patch('/parcels/:id/reject', [verifyToken, isAgent], agentController.rejectJob);
 
+router.get('/my-commission', [verifyToken, isAgent], agentController.getMyCommission);
+
 
 module.exports = router;

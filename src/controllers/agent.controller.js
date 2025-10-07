@@ -70,11 +70,24 @@ const getMyTasks = async (req, res) => {
     }
 };
 
+const getMyCommission = async (req, res) => {
+    try {
+        const agentId = req.user.id;
+        const commissionData = await parcelService.getTotalCommission(agentId);
+        res.status(200).json(commissionData);
+    } catch (error) {
+        console.error("Agent: Error fetching total commission:", error);
+        res.status(500).json({ message: "Failed to fetch total commission." });
+    }
+};
+
+
 module.exports = {
     getMyAssignedParcels,
     getMyParcelDetails ,
     acceptJob,
     rejectJob,
     updateParcelStatus,
-    getMyTasks
+    getMyTasks,
+    getMyCommission
 };
