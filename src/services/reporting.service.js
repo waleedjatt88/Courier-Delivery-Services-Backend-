@@ -77,8 +77,11 @@ const getBookingStats = async (period) => {
     };
 };
 
-const generateParcelsReport = async () => {
-    const parcels = await BookingParcel.findAll({
+const generateParcelsReport = async (pageParam = 1, limitParam = 10) => {
+    const page = Math.max(parseInt(pageParam) || 1, 1);
+    const limit = Math.max(parseInt(limitParam) || 10, 1);
+    const offset = (page - 1) * limit;
+        const { count, rows: parcels } = await BookingParcel.findAndCountAll({
         where: {
             status: 'delivered'
         },
@@ -88,17 +91,18 @@ const generateParcelsReport = async () => {
             'deliveryCharge',
             'paymentStatus',
             'paymentMethod',
-             'updatedAt' 
-
+            'updatedAt'
         ],
         include: {
             model: User,
             as: 'Customer',
             attributes: ['fullName']
         },
-        order: [['id', 'DESC']]
+        order: [['updatedAt', 'DESC']], 
+        limit: limit,
+        offset: offset
     });
-    const report = parcels.map(parcel => ({
+    const reportData = parcels.map(parcel => ({
         parcelId: parcel.id, 
         trackingNumber: parcel.trackingNumber,
         customerName: parcel.Customer ? parcel.Customer.fullName : 'N/A',
@@ -107,9 +111,16 @@ const generateParcelsReport = async () => {
         paymentMethod: parcel.paymentMethod,
         bookingStatus: 'delivered',
         lastUpdate: parcel.updatedAt 
-
     }));
-    return report;
+        return {
+        report: reportData,
+        pagination: {
+            totalItems: count,
+            currentPage: page,
+            itemsPerPage: limit,
+            totalPages: Math.ceil(count / limit),
+        }
+    };
 };
 
 const getRevenueStats = async () => {

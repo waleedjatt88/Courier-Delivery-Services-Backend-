@@ -17,12 +17,14 @@ const getBookingStats = async (req, res) => {
 
 const getParcelsReport = async (req, res) => {
     try {
-        const reportData = await reportingService.generateParcelsReport();
-        res.status(200).json(reportData);
+        const { page, limit } = req.query;
+        const result = await reportingService.generateParcelsReport(page, limit);
+        res.status(200).json(result);
     } catch (error) {
         console.error("Error generating parcels report:", error);
         res.status(500).json({ message: "Failed to generate parcels report." });
-    }};
+    }
+};
 
 const getRevenueStats = async (req, res) => {
     try {

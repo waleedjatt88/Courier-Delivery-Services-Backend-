@@ -193,46 +193,78 @@ const confirmCodBooking = async (parcelId, customerId) => {
 };
 
 
-const getMyParcels = async (customerId) => {
-  const parcels = await db.BookingParcel.findAll({
-    where: {
-      customerId: customerId,
-      status: {
-        [Op.notIn]: ["unconfirmed", "cancelled"],
-      },
+const getMyParcels = async (customerId, pageParam = 1, limitParam = 10) => {
+  const page = Math.max(parseInt(pageParam) || 1, 1);
+  const limit = Math.max(parseInt(limitParam) || 10, 1);
+  const offset = (page - 1) * limit;
+  const whereClause = {
+    customerId: customerId,
+    status: {
+      [Op.notIn]: ["unconfirmed", "cancelled"],
     },
-        order: [['id', 'DESC']], 
+  };
+  const { count, rows: parcels } = await db.BookingParcel.findAndCountAll({
+    where: whereClause,
+    order: [['id', 'DESC']],
+    limit: limit,
+    offset: offset
   });
-  return parcels;
+  return {
+    parcels,
+    pagination: {
+      totalItems: count,
+      currentPage: page,
+      itemsPerPage: limit,
+      totalPages: Math.ceil(count / limit),
+    }
+  };
 };
 
-const getAllParcels = async (filterType = null, pageParam = 1, limitParam = 10) => {
+const getAllParcels = async (filterType = null, pageParam = 1, limitParam = 10, searchTerm = null) => {
     const page = Math.max(parseInt(pageParam) || 1, 1);
     const limit = Math.max(parseInt(limitParam) || 10, 1);
     const offset = (page - 1) * limit;
-    const whereClause = {};
+    const whereConditions = []; 
+
+    let statusFilter;
     switch (filterType) {
         case 'active':
-            whereClause.status = { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] };
+            statusFilter = { status: { [Op.in]: ['picked_up', 'in_transit', 'out_for_delivery', 'delivered'] } };
             break;
         case 'scheduled':
-            whereClause.status = 'scheduled';
+            statusFilter = { status: 'scheduled' };
             break;
         case 'order_placed':
-            whereClause.status = 'order_placed';
+            statusFilter = { status: 'order_placed' };
             break;
         case 'cancelled':
-            whereClause.status = 'cancelled';
-            whereClause.paymentStatus = { [Op.in]: ['pending', 'completed'] };
-            break;
-        default:
-            whereClause.status = {
-                [Op.notIn]: ['unconfirmed', 'cancelled']
+            statusFilter = {
+                status: 'cancelled',
+                paymentStatus: { [Op.in]: ['pending', 'completed'] }
             };
             break;
+        default:
+            statusFilter = { status: { [Op.notIn]: ['unconfirmed', 'cancelled'] } };
+            break;
     }
-    const { count, rows: parcels } = await db.BookingParcel.findAndCountAll({
-        where: whereClause,
+    whereConditions.push(statusFilter);
+    if (searchTerm && searchTerm.trim() !== '') {
+        const keywords = searchTerm.trim().split(/\s+/);
+        const keywordConditions = keywords.map(keyword => {
+            const conditions = [
+                { paymentStatus: { [Op.iLike]: `%${keyword}%` } },
+                Sequelize.where(Sequelize.col('Customer.fullName'), { [Op.iLike]: `%${keyword}%` })
+            ];
+            if (!isNaN(keyword)) {
+                conditions.push({ id: parseInt(keyword, 10) });
+            }
+            return { [Op.or]: conditions };
+        });
+        whereConditions.push({ [Op.and]: keywordConditions });
+    }
+
+     const { count, rows: parcels } = await db.BookingParcel.findAndCountAll({
+        where: { [Op.and]: whereConditions }, 
         order: [['id', 'DESC']],
         include: [
             {
@@ -247,13 +279,14 @@ const getAllParcels = async (filterType = null, pageParam = 1, limitParam = 10) 
                 required: false
             }
         ],
+        subQuery: false, 
         limit: limit,
         offset: offset
     });
     return {
         parcels,
         pagination: {
-            totalCounts: count,
+            totalItems: count, 
             currentPage: page,
             itemsPerPage: limit,
             totalPages: Math.ceil(count / limit),
@@ -279,39 +312,46 @@ const getParcelById = async (parcelId) => {
   return parcel;
 };
 
-const getAgentParcelsByType = async (agentId, filterType) => {
-    const queryOptions = {
-        where: {
-            agentId: agentId
-        },
-        order: [['assignedAt', 'DESC']], 
+const getAgentParcelsByType = async (agentId, filterType, pageParam = 1, limitParam = 10) => {
+    const page = Math.max(parseInt(pageParam) || 1, 1);
+    const limit = Math.max(parseInt(limitParam) || 10, 1);
+    const offset = (page - 1) * limit;
+    const whereClause = { agentId: agentId };
+    switch (filterType) {
+        case 'pending':
+            whereClause.status = 'order_placed';
+            whereClause.agentAcceptanceStatus = 'pending';
+            break;
+        case 'active':
+            whereClause.status = { [Op.in]: ['scheduled', 'picked_up', 'in_transit', 'out_for_delivery'] };
+            break;
+        case 'completed':
+            whereClause.status = 'delivered';
+            break;
+        default:
+            whereClause.status = { [Op.notIn]: ['cancelled', 'unconfirmed'] };
+            break;
+    }
+        const { count, rows: parcels } = await db.BookingParcel.findAndCountAll({
+        where: whereClause,
+        order: [['id', 'DESC']], 
         include: {
             model: db.User,
             as: 'Customer',
-            attributes: ['fullName', 'phoneNumber', 'address'] 
+            attributes: ['fullName', 'phoneNumber', 'address']
+        },
+        limit: limit,
+        offset: offset
+    });
+    return {
+        parcels,
+        pagination: {
+            totalItems: count,
+            currentPage: page,
+            itemsPerPage: limit,
+            totalPages: Math.ceil(count / limit),
         }
     };
-    switch (filterType) {
-        case 'pending':
-            queryOptions.where.status = 'order_placed';
-            queryOptions.where.agentAcceptanceStatus = 'pending';
-            break;
-        case 'active':
-            queryOptions.where.status = {
-                [Op.in]: ['scheduled', 'picked_up', 'in_transit', 'out_for_delivery']
-            };
-            break;
-        case 'completed':
-            queryOptions.where.status = 'delivered';
-            break;
-        default:
-            queryOptions.where.status = {
-                [Op.notIn]: ['cancelled', 'unconfirmed']
-            };
-            break;
-    }
-    const parcels = await db.BookingParcel.findAll(queryOptions);
-    return parcels;
 };
 
 

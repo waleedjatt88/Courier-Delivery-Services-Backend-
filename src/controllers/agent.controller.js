@@ -60,10 +60,10 @@ const updateParcelStatus = async (req, res) => {
 
 const getMyTasks = async (req, res) => {
     try {
-        const agentId = req.user.id; 
-        const { type } = req.query; 
-        const parcels = await parcelService.getAgentParcelsByType(agentId, type);
-        res.status(200).json(parcels);
+        const agentId = req.user.id;
+        const { type, page, limit } = req.query;
+        const result = await parcelService.getAgentParcelsByType(agentId, type, page, limit);
+        res.status(200).json(result);
     } catch (error) {
         console.error("Agent: Error fetching tasks:", error);
         res.status(500).json({ message: "Failed to fetch tasks." });

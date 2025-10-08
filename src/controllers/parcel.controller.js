@@ -51,13 +51,12 @@ const confirmCodBooking = async (req, res) => {
 const getMyParcels = async (req, res) => {
   try {
     const customerId = req.user.id;
-    const parcels = await parcelService.getMyParcels(customerId);
-    res.status(200).json({ parcels });
+    const { page, limit } = req.query;
+    const result = await parcelService.getMyParcels(customerId, page, limit);
+    res.status(200).json(result);
   } catch (error) {
-    console.error("Error fetching parcels:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch parcels.", error: error.message });
+    console.error("Error fetching customer parcels:", error);
+    res.status(500).json({ message: "Failed to fetch parcels." });
   }
 };
 

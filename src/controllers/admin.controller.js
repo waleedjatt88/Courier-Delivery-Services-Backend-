@@ -9,17 +9,13 @@ const manualOrderService = require('../services/manualOrder.service.js');
 
 const getAllUsers = async (req, res) => {
     try {
-        // YEH HAI SAHI LINE:
-        // 'type', 'page', aur 'limit' teeno ko query se nikaalein
         const { type, page, limit } = req.query;
-
-        // Ab service function ko teeno arguments bhejein
         const result = await adminService.getAllUsers(type, page, limit);
         
         res.status(200).json(result);
 
     } catch (error) {
-        console.error("!!!  ERROR in getAllUsers controller:", error); // Debugging ke liye
+        console.error("!!!  ERROR in getAllUsers controller:", error); 
         res.status(400).json({ message: error.message });
     }
 };
@@ -37,15 +33,9 @@ const deleteUser = async (req, res) => {
 
 const getAllParcels = async (req, res) => {
     try {
-        // YEH HAI SAHI LINE:
-        // 'type', 'page', aur 'limit' teeno ko query se nikaalein
-        const { type, page, limit } = req.query;
-
-        // Ab service function ko teeno arguments bhejein
-        const result = await parcelService.getAllParcels(type, page, limit);
-        
+        const { type, page, limit, search } = req.query;
+        const result = await parcelService.getAllParcels(type, page, limit, search);
         res.status(200).json(result);
-
     } catch (error) {
         console.error("Admin: Error fetching all parcels:", error);
         res.status(500).json({ message: "Failed to fetch parcels." });

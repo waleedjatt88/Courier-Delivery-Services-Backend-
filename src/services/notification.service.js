@@ -20,7 +20,7 @@ const sendEmail = async (options) => {
   const templateSource = fs.readFileSync(templatePath, "utf8");
   const compiledTemplate = handlebars.compile(templateSource);
   const finalHtml = compiledTemplate({
-    logoUrl: "https://i.ibb.co/wrZ3VgdX/Delivery-Rider-Logo-for-Dev-Go.png",
+    logoUrl: "https://i.ibb.co/sJCvwQGT/Delivery-Rider-Logo-for-Dev-Go-removebg-preview.png",
     ...options.data,
   });
   const mailOptions = {

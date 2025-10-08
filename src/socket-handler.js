@@ -4,11 +4,13 @@ const { Chat } = db;
 const initializeSocket = (io) => {
   io.on("connection", (socket) => {
     console.log(`✅SUCCESS! A new client has connected: ${socket.id}`);
+    
     socket.on("joinChat", (customerId) => {
       const roomName = `chat_customer_${customerId}`;
       socket.join(roomName);
       console.log(`Client ${socket.id} joined room: ${roomName}`);
     });
+    
     socket.on("sendMessage", async (data) => {
       try {
         const { customerId, adminId, message, sentBy } = data;
