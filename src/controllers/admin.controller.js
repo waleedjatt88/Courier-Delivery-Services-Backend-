@@ -326,10 +326,11 @@ module.exports = {
     confirmPayNowOrder,
     sendPaymentLink,
     confirmCodPayment,
-    getAgentStats,
     getGlobalStats,
     getOverallPerformanceStats,
     getAgentCommission,
     updateAgentCommission,
     setUserFlag,
+    getAgentStats
+
 };

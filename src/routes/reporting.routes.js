@@ -5,7 +5,8 @@ const reportingController = require('../controllers/reporting.controller.js');
 const { verifyToken, isAdmin } = require('../middleware/auth.middleware.js');
 
 
-
+router.get('/stats/revenue-graph', [verifyToken, isAdmin], reportingController.getRevenueGraphStats);
+router.get('/stats/delivered', [verifyToken, isAdmin], reportingController.getDeliveredStats);
 router.get('/stats/bookings', [verifyToken, isAdmin], reportingController.getBookingStats);
 router.get('/reports/delivered-parcels', [verifyToken, isAdmin], reportingController.getParcelsReport);
 router.get('/stats/revenue', [verifyToken, isAdmin], reportingController.getRevenueStats);

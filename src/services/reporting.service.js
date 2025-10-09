@@ -71,11 +71,127 @@ const getBookingStats = async (period) => {
     });
     const dataMap = new Map(results.map(r => [dataFormatter(r), parseInt(r.totalBookings, 10)]));
     const finalData = labels.map(label => dataMap.get(label) || 0);
+    const totalCount = finalData.reduce((sum, current) => sum + current, 0);
+
     return {
+        period: period, 
+        totalCount: totalCount, 
         labels: labels,
         data: finalData
     };
 };
+
+const getDeliveredStats = async (period) => {
+    let dateFilter, groupBy, labels, dataFormatter;
+    switch (period) {
+        case 'daily':
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+            dateFilter = { [Op.gte]: sevenDaysAgo };
+            groupBy = fn('EXTRACT', literal('ISODOW FROM "updatedAt"')); 
+            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            dataFormatter = (result) => {
+                if (!result || !result.period) return null;
+                const dayIndex = parseInt(result.period, 10) - 1; 
+                return labels[dayIndex];
+            };
+            break;
+        case 'monthly':
+            dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
+            groupBy = fn('date_trunc', 'month', col('updatedAt')); 
+            labels = getLastTwelveMonthsLabels();
+            dataFormatter = (result) => new Date(result.period).toLocaleDateString('en-US', { month: 'short' });
+            break;
+        case 'yearly':
+            dateFilter = { [Op.gte]: new Date(new Date().setFullYear(new Date().getFullYear() - 6)) };
+            groupBy = fn('date_trunc', 'year', col('updatedAt')); 
+            labels = getLastSixYearsLabels();
+            dataFormatter = (result) => new Date(result.period).getFullYear().toString();
+            break;
+        default:
+            throw new Error("Invalid period specified. Use 'daily', 'monthly', or 'yearly'.");
+    }
+
+    const results = await BookingParcel.findAll({
+        where: {
+            updatedAt: dateFilter, 
+            status: 'delivered'  
+        },
+        attributes: [
+            [groupBy, 'period'],
+            [fn('COUNT', col('id')), 'totalDelivered']
+        ],
+        group: ['period'],
+        raw: true
+    });
+    const dataMap = new Map(results.map(r => [dataFormatter(r), parseInt(r.totalDelivered, 10)]));
+    const finalData = labels.map(label => dataMap.get(label) || 0);
+    const totalCount = finalData.reduce((sum, current) => sum + current, 0);
+
+    return {
+        period: period, 
+        totalCount: totalCount, 
+        labels: labels,
+        data: finalData
+    };
+};
+
+const getRevenueGraphStats = async (period) => {
+
+   let dateFilter, groupBy, labels, dataFormatter;
+    switch (period) {
+        case 'daily':
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+            dateFilter = { [Op.gte]: sevenDaysAgo };
+            groupBy = fn('EXTRACT', literal('ISODOW FROM "updatedAt"')); 
+            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            dataFormatter = (result) => {
+                if (!result || !result.period) return null;
+                const dayIndex = parseInt(result.period, 10) - 1; 
+                return labels[dayIndex];
+            };
+            break;
+        case 'monthly':
+            dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
+            groupBy = fn('date_trunc', 'month', col('updatedAt')); 
+            labels = getLastTwelveMonthsLabels();
+            dataFormatter = (result) => new Date(result.period).toLocaleDateString('en-US', { month: 'short' });
+            break;
+        case 'yearly':
+            dateFilter = { [Op.gte]: new Date(new Date().setFullYear(new Date().getFullYear() - 6)) };
+            groupBy = fn('date_trunc', 'year', col('updatedAt')); 
+            labels = getLastSixYearsLabels();
+            dataFormatter = (result) => new Date(result.period).getFullYear().toString();
+            break;
+        default:
+            throw new Error("Invalid period specified. Use 'daily', 'monthly', or 'yearly'.");
+    }
+    const results = await BookingParcel.findAll({
+        where: {
+            createdAt: dateFilter,
+            status: {
+                [Op.notIn]: ['unconfirmed', 'cancelled'] 
+            }
+        },
+        attributes: [
+            [groupBy, 'period'],
+            [fn('SUM', col('deliveryCharge')), 'totalRevenue']
+        ],
+        group: ['period'],
+        raw: true
+    });
+    const dataMap = new Map(results.map(r => [dataFormatter(r), parseFloat(r.totalRevenue) || 0])); 
+    const finalData = labels.map(label => dataMap.get(label) || 0);
+    const totalRevenue = finalData.reduce((sum, current) => sum + current, 0);
+    return {
+        period: period, 
+        totalRevenue: totalRevenue, 
+        labels: labels,
+        data: finalData
+    };
+};
+
 
 const generateParcelsReport = async (pageParam = 1, limitParam = 10) => {
     const page = Math.max(parseInt(pageParam) || 1, 1);
@@ -203,5 +319,7 @@ module.exports = {
     getBookingStats,
     generateParcelsReport,
     getRevenueStats,
-    generateAllUsersFraudReport
+    generateAllUsersFraudReport,
+    getDeliveredStats,
+    getRevenueGraphStats
 };

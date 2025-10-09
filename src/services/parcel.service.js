@@ -248,19 +248,20 @@ const getAllParcels = async (filterType = null, pageParam = 1, limitParam = 10, 
             break;
     }
     whereConditions.push(statusFilter);
-    if (searchTerm && searchTerm.trim() !== '') {
+      if (searchTerm && searchTerm.trim() !== '') {
         const keywords = searchTerm.trim().split(/\s+/);
-        const keywordConditions = keywords.map(keyword => {
-            const conditions = [
-                { paymentStatus: { [Op.iLike]: `%${keyword}%` } },
-                Sequelize.where(Sequelize.col('Customer.fullName'), { [Op.iLike]: `%${keyword}%` })
-            ];
+        const keywordSearchConditions = keywords.map(keyword => {
+            const conditions = [];
+            conditions.push({ paymentStatus: { [Op.iLike]: `%${keyword}%` } });
+            conditions.push(Sequelize.where(Sequelize.col('Customer.fullName'), { [Op.iLike]: `%${keyword}%` }));
+            
             if (!isNaN(keyword)) {
                 conditions.push({ id: parseInt(keyword, 10) });
             }
+            
             return { [Op.or]: conditions };
         });
-        whereConditions.push({ [Op.and]: keywordConditions });
+            whereConditions.push(...keywordSearchConditions);
     }
 
      const { count, rows: parcels } = await db.BookingParcel.findAndCountAll({

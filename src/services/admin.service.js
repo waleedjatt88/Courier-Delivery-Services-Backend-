@@ -228,6 +228,6 @@ module.exports = {
     unsuspendUser,
     getAgentStats,
     getGlobalParcelStats,
-    getOverallPerformanceStats,
-    setUserSuspiciousFlag
+    setUserSuspiciousFlag,
+    getOverallPerformanceStats
 };
