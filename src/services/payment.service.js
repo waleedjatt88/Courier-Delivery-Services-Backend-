@@ -18,6 +18,12 @@ const createCheckoutSession = async (parcelId, customerId) => {
     if (parcel.paymentStatus === 'completed') {
         throw new Error('This parcel has already been paid for.');
     }
+     if (parcel.status === 'order_placed') {
+        throw new Error('This order has already been confirmed via Cash on Delivery (COD).');
+    }
+    if (parcel.status !== 'unconfirmed') {
+        throw new Error(`This parcel cannot be paid for as its current status is '${parcel.status}'.`);
+    }
     const line_items = [{
         price_data: {
             currency: 'pkr',

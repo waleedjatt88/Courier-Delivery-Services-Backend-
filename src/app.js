@@ -10,6 +10,8 @@ const http = require('http');
 const { Server } = require("socket.io");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const redisClient = require("./config/redis-client.js"); 
+const jwt = require('jsonwebtoken'); 
+
 
 //(Routes, Controllers)
 const authRoutes = require("./routes/auth.routes.js");
@@ -54,9 +56,10 @@ const io = new Server(server, {
 
 const pubClient = redisClient;
 const subClient = pubClient.duplicate();
-
 io.adapter(createAdapter(pubClient, subClient));
 console.log("Socket.IO adapter is set to Redis.");
+
+
 
 
 initializeSocket(io);
@@ -98,5 +101,4 @@ server.listen(PORT, () => {
   unsuspendUsers.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
   console.log(`📡 Socket.IO is also running.`);
-  // console.log(`Accessible on your network at: http://192.168.100.238:${PORT}`); 
 });

@@ -28,18 +28,24 @@ const getLastSixYearsLabels = () => {
 const getBookingStats = async (period) => {
     let dateFilter, groupBy, labels, dataFormatter;
     switch (period) {
-        case 'daily':
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-            dateFilter = { [Op.gte]: sevenDaysAgo };
-            groupBy = fn('EXTRACT', literal('ISODOW FROM "createdAt"'));
-            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-            dataFormatter = (result) => {
-                if (!result || !result.period) return null;
-                const dayIndex = parseInt(result.period, 10) - 1; 
-                return labels[dayIndex];
-            };
-            break;
+      case 'daily':
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6); 
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        dateFilter = { [Op.gte]: sevenDaysAgo };
+        groupBy = fn('date_trunc', 'day', col('createdAt')); 
+        labels = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('en-US', { weekday: 'short' })); 
+        }
+        dataFormatter = (result) => {
+            if (!result || !result.period) return null;
+            return new Date(result.period).toLocaleDateString('en-US', { weekday: 'short' });
+        };
+        break; 
         case 'monthly':
             dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
             groupBy = fn('date_trunc', 'month', col('createdAt'));
@@ -83,19 +89,25 @@ const getBookingStats = async (period) => {
 
 const getDeliveredStats = async (period) => {
     let dateFilter, groupBy, labels, dataFormatter;
-    switch (period) {
-        case 'daily':
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-            dateFilter = { [Op.gte]: sevenDaysAgo };
-            groupBy = fn('EXTRACT', literal('ISODOW FROM "updatedAt"')); 
-            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-            dataFormatter = (result) => {
-                if (!result || !result.period) return null;
-                const dayIndex = parseInt(result.period, 10) - 1; 
-                return labels[dayIndex];
-            };
-            break;
+     switch (period) {
+      case 'daily':
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6); 
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        dateFilter = { [Op.gte]: sevenDaysAgo };
+        groupBy = fn('date_trunc', 'day', col('createdAt')); 
+        labels = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('en-US', { weekday: 'short' })); 
+        }
+        dataFormatter = (result) => {
+            if (!result || !result.period) return null;
+            return new Date(result.period).toLocaleDateString('en-US', { weekday: 'short' });
+        };
+        break; 
         case 'monthly':
             dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
             groupBy = fn('date_trunc', 'month', col('updatedAt')); 
@@ -139,19 +151,25 @@ const getDeliveredStats = async (period) => {
 const getRevenueGraphStats = async (period) => {
 
    let dateFilter, groupBy, labels, dataFormatter;
-    switch (period) {
-        case 'daily':
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-            dateFilter = { [Op.gte]: sevenDaysAgo };
-            groupBy = fn('EXTRACT', literal('ISODOW FROM "updatedAt"')); 
-            labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-            dataFormatter = (result) => {
-                if (!result || !result.period) return null;
-                const dayIndex = parseInt(result.period, 10) - 1; 
-                return labels[dayIndex];
-            };
-            break;
+     switch (period) {
+      case 'daily':
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6); 
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        dateFilter = { [Op.gte]: sevenDaysAgo };
+        groupBy = fn('date_trunc', 'day', col('createdAt')); 
+        labels = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(d.toLocaleDateString('en-US', { weekday: 'short' })); 
+        }
+        dataFormatter = (result) => {
+            if (!result || !result.period) return null;
+            return new Date(result.period).toLocaleDateString('en-US', { weekday: 'short' });
+        };
+        break; 
         case 'monthly':
             dateFilter = { [Op.gte]: new Date(new Date().setMonth(new Date().getMonth() - 12)) };
             groupBy = fn('date_trunc', 'month', col('updatedAt')); 

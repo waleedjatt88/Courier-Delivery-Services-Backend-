@@ -3,7 +3,7 @@
 const db = require("../../models");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const { BookingParcel, User } = db; 
+const { BookingParcel, User, Zone, Media } = db;
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
 const { Op, Sequelize } = require("sequelize");

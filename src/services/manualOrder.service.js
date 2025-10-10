@@ -7,16 +7,30 @@ const invoiceService = require('./invoice.service.js');
 const stripeService = require('./payment.service.js'); 
 const { Op } = require('sequelize');
 
+
 const prepareManualCheckout = async (customerData, parcelData) => {
-    let customer = await User.findOne({ where: { email: customerData.email } });
-    if (!customer) {
-        customer = await User.create({
-            ...customerData,
-            role: 'guest',
-            isVerified: true, 
-            passwordHash: 'not_applicable'
-        });
-    }
+   let customer = await User.findOne({ where: { email: customerData.email } });
+if (!customer) {
+  const { fullName, email, phoneNumber } = customerData;
+  if (!fullName || !email || !phoneNumber) {
+    throw new Error("Guest customer's full name, email, and phone number are required.");
+  }
+  const phoneRegex = /^03\d{9}$/;
+  if (!phoneRegex.test(phoneNumber)) {
+    throw new Error("Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).");
+  }
+  const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+  if (!allowedDomains.includes(emailDomain)) {
+    throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
+  }
+  customer = await User.create({
+    ...customerData,
+    role: 'guest',
+    isVerified: true,
+    passwordHash: 'not_applicable'
+  });
+}
      const { 
         packageWeight, 
         deliveryType, 

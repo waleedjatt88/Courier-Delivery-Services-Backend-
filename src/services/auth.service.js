@@ -21,42 +21,63 @@ const register = async (userData, createdByAdmin = false) => {
     if (!phoneRegex.test(phoneNumber)) {
         throw new Error('Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).');
     }
-    if (!createdByAdmin) {
-        const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
-        const emailDomain = email.split('@')[1]?.toLowerCase();
-        if (!allowedDomains.includes(emailDomain)) {
-            throw new Error('Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for registration.');
-        }}
-    const userExists = await User.findOne({ where: { email } });
-    if (userExists) {
-        throw new Error('User with this email already exists');
-    }
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-    let userRole = 'customer';
-    if (createdByAdmin && role) {
-        if (role === 'admin') {
-            throw new Error('Admin cannot create another admin account');
+    const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
+const emailDomain = email.split('@')[1]?.toLowerCase();
+if (!allowedDomains.includes(emailDomain)) {
+  throw new Error('Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for registration.');
+}
+
+  const existingUser = await User.findOne({ where: { email } });
+    if (createdByAdmin) {
+        if (existingUser) {
+            existingUser.isVerified = true;
+            existingUser.otp = null;
+            existingUser.otpExpires = null;
+            await existingUser.save();
+            
+            const userResult = existingUser.toJSON();
+            delete userResult.passwordHash;
+            return { user: userResult, wasCreatedByAdmin: true }; 
+        } else {
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+            let userRole = (role && ['agent', 'customer'].includes(role)) ? role : 'customer';
+            
+            const newUser = await User.create({
+                fullName, email, phoneNumber, passwordHash,
+                role: userRole,
+                isVerified: true, 
+            });
+            const userResult = newUser.toJSON();
+            delete userResult.passwordHash;
+            return { user: userResult, wasCreatedByAdmin: true };
         }
-        if (['agent', 'customer'].includes(role)) {
-            userRole = role;
-        }}
-    const user = await User.create({
-        fullName,
-        email,
-        phoneNumber,
-        passwordHash,
-        role: userRole,
-        isVerified: createdByAdmin,
-    });
-    if (!createdByAdmin) {
-        await sendOtp(email, OtpType.EMAIL_VERIFICATION);
+    } 
+    else {
+        if (existingUser) {
+            if (existingUser.isVerified) {
+                throw new Error('User with this email already exists and is verified.');
+            } else {
+                await sendOtp(email, OtpType.EMAIL_VERIFICATION);
+                return { message: 'This email is already registered but not verified. A new OTP has been sent. Please verify.' };
+            }
+        } else {
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+            
+            const newUser = await User.create({
+                fullName, email, phoneNumber, passwordHash,
+                role: 'customer',
+                isVerified: false, 
+            });
+            
+            await sendOtp(email, OtpType.EMAIL_VERIFICATION);
+            
+            const userResult = newUser.toJSON();
+            delete userResult.passwordHash;
+            return { user: userResult, wasCreatedByAdmin: false };
+        }
     }
-    const userResult = user.toJSON();
-    delete userResult.passwordHash;
-    delete userResult.otp;
-    delete userResult.otpExpires;
-    return userResult;
 };
 
 const login = async (loginData) => {

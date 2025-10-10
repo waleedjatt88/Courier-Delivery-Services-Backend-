@@ -8,19 +8,24 @@ const blacklistedTokens = new Set();
 
 
 const register = async (req, res) => {
-  try {
-    const createdByAdmin = req.user && req.user.role === "admin";
-    const user = await authService.register(req.body, createdByAdmin);
-        const message = createdByAdmin
-      ? "User created successfully."
-      : "User registered! Please check your email for OTP.";
-    res.status(201).json({
-      message: message, 
-      user: user,      
-    });
-  } catch (error) {
-    res.status(400).json({ message: "Registration failed: " + error.message });
-  }
+    try {
+        const createdByAdmin = (req.user && req.user.role === 'admin');
+        
+        const result = await authService.register(req.body, createdByAdmin);
+
+        if (result.message) {
+            return res.status(200).json({ message: result.message });
+        }
+                const { user, wasCreatedByAdmin } = result;
+        const message = wasCreatedByAdmin
+            ? 'User created/verified successfully.'
+            : 'User registered! Please check your email for OTP.';
+
+        res.status(201).json({ message: message, user: user });
+        
+    } catch (error) {
+        res.status(400).json({ message: 'Registration failed: ' + error.message });
+    }
 };
 
 const login = async (req, res) => {
