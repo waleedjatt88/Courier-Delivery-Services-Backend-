@@ -1,6 +1,9 @@
 const db = require("../models");
-const { Chat } = db;
+const { Chat, User } = db;
 const jwt = require('jsonwebtoken');
+
+const ADMIN_ROOM = 'admin_room';
+const onlineCustomers = new Map();
 
 const initializeSocket = (io) => {
   const chatNamespace = io.of('/chat');
@@ -17,15 +20,31 @@ const initializeSocket = (io) => {
       next();
     });
   });
-  chatNamespace.on("connection", (socket) => {
+  chatNamespace.on("connection", async (socket) => { 
     console.log(`✅ User connected to /chat namespace: ${socket.user.id} (Role: ${socket.user.role})`);
+
+    if (socket.user.role === 'admin') {
+        socket.join(ADMIN_ROOM);
+        console.log(`Admin ${socket.user.id} joined the admin room.`);
+        socket.emit('update_online_list', Array.from(onlineCustomers.values()));
+    }
     
+
     if (socket.user.role === 'customer') {
         const customerId = socket.user.id;
         const roomName = `chat_customer_${customerId}`;
         socket.join(roomName);
         console.log(`Customer ${customerId} auto-joined room: ${roomName}`);
+
+           const customer = await User.findByPk(customerId, { attributes: ['id', 'fullName'] });
+        if (customer && !onlineCustomers.has(customerId)) {
+            onlineCustomers.set(customerId, customer.toJSON());
+            chatNamespace.to(ADMIN_ROOM).emit('update_online_list', Array.from(onlineCustomers.values()));
+            console.log(`Customer ${customerId} is now online. Total online: ${onlineCustomers.size}`);
     }
+    }
+
+
     socket.on("joinAdminChat", (customerId) => {
         if (socket.user.role === 'admin') {
             const roomName = `chat_customer_${customerId}`;
@@ -74,8 +93,23 @@ const initializeSocket = (io) => {
 
     socket.on("disconnect", () => {
       console.log(`🔥 User disconnected from /chat: ${socket.user.id}`);
+      
+      // Check karein ki disconnect hone waala user customer tha ya nahi
+      if (socket.user.role === 'customer') {
+          const customerId = socket.user.id;
+          // Use online list se hata dein
+          if (onlineCustomers.has(customerId)) {
+              onlineCustomers.delete(customerId);
+              // Saare admins ko nayi, chhoti list bhejein
+              chatNamespace.to(ADMIN_ROOM).emit('update_online_list', Array.from(onlineCustomers.values()));
+              console.log(`Customer ${customerId} went offline. Total online: ${onlineCustomers.size}`);
+          }
+      }
     });
+
   });
+
 };
+
 
 module.exports = initializeSocket;
