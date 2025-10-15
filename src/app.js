@@ -100,5 +100,7 @@ server.listen(PORT, () => {
   autoRejectJob.start();
   unsuspendUsers.start();
   console.log(`🚀 Server is listening on http://localhost:${PORT}`);
+  console.log(`🌍 Public (ngrok) URL: https://nevaeh-spissatus-nonbelievingly.ngrok-free.dev`);
+
   console.log(`📡 Socket.IO is also running.`);
 });

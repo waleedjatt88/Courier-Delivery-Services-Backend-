@@ -9,7 +9,11 @@ router.get('/my-history', verifyToken, (req, res) => {
 });
 
 router.get('/history/:customerId', [verifyToken, isAdmin], chatController.getCustomerChatHistory);
-
 router.delete('/my-history', verifyToken, chatController.clearMyChat);
+
+router.get('/sessions', [verifyToken, isAdmin], chatController.getChatSessions);
+router.get('/history/:customerId', [verifyToken, isAdmin], chatController.getCustomerChatHistory);
+router.patch('/sessions/:customerId/mark-as-read', [verifyToken, isAdmin], chatController.markAsRead);
+
 
 module.exports = router;

@@ -25,7 +25,30 @@ const clearMyChat = async (req, res) => {
     }
 };
 
+const getChatSessions = async (req, res) => {
+    try {
+        const sessions = await chatService.getChatSessions();
+        res.status(200).json(sessions);
+    } catch (error) {
+        
+        console.error("!!! ASLI ERROR in getChatSessions:", error); 
+        res.status(500).json({ message: 'Failed to fetch chat sessions.' });
+    }
+};
+
+const markAsRead = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const result = await chatService.markMessagesAsReadByAdmin(customerId);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to mark messages as read.' });
+    }
+};
+
 module.exports = {
     getCustomerChatHistory,
-    clearMyChat
+    clearMyChat,
+    getChatSessions,
+    markAsRead,
 };

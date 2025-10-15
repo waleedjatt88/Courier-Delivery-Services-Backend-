@@ -12,7 +12,12 @@ module.exports = (sequelize, DataTypes) => {
     adminId: DataTypes.INTEGER,
     message: DataTypes.TEXT,
     sentBy: DataTypes.ENUM('customer', 'admin'),
-    clearedByCustomer: DataTypes.BOOLEAN
+    clearedByCustomer: DataTypes.BOOLEAN,
+     isReadByAdmin: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'Chat',

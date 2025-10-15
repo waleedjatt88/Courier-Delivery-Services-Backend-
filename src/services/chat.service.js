@@ -1,5 +1,5 @@
 const db = require('../../models');
-const { Chat, User } = db;
+const { Chat, User, Sequelize } = db;  
 const { Op } = require('sequelize');
 
 
@@ -7,15 +7,12 @@ const getChatHistory = async (customerId, requesterId, requesterRole) => {
     if (requesterRole !== 'admin' && customerId.toString() !== requesterId.toString()) {
         throw new Error('Forbidden: You are not authorized to view this chat.');
     }
-
     const whereClause = {
         customerId: customerId
     };
-
     if (requesterRole === 'customer') {
         whereClause.clearedByCustomer = false;
     }
-
     const messages = await Chat.findAll({
         where: whereClause,
         order: [['createdAt', 'ASC']], 
@@ -41,7 +38,47 @@ const clearChatForCustomer = async (customerId) => {
     }
 };
 
+const getChatSessions = async () => {
+    
+    const sessions = await Chat.findAll({
+        attributes: [
+            'customerId',
+            [Sequelize.fn('COUNT', Sequelize.literal('CASE WHEN "isReadByAdmin" = false THEN 1 END')), 'unreadCount'],
+            [Sequelize.fn('MAX', Sequelize.col('Chat.createdAt')), 'lastMessageAt'] 
+        ],
+        group: ['customerId', 'Customer.id', 'Customer.fullName'],
+        order: [['lastMessageAt', 'DESC']],
+        include: {
+            model: User,
+            as: 'Customer',
+            attributes: ['id', 'fullName']
+        },
+        raw: true
+    });
+    return sessions.map(s => ({
+        customerId: s.customerId,
+        customerName: s['Customer.fullName'],
+        unreadCount: parseInt(s.unreadCount, 10),
+        lastMessageAt: s.lastMessageAt
+    }));
+};
+
+const markMessagesAsReadByAdmin = async (customerId) => {
+    const [affectedCount] = await Chat.update(
+        { isReadByAdmin: true },
+        {
+            where: {
+                customerId: customerId,
+                isReadByAdmin: false
+            }
+        }
+    );
+    return { messagesMarkedAsRead: affectedCount };
+};
+
 module.exports = {
     getChatHistory,
-    clearChatForCustomer 
+    clearChatForCustomer,
+    getChatSessions,
+    markMessagesAsReadByAdmin
 };
