@@ -25,15 +25,13 @@ const chatRoutes = require('./routes/chat.routes.js');
 const paymentController = require("./controllers/payment.controller.js");
 const publicRoutes = require('./routes/public.routes.js');
 const { autoRejectJob,unsuspendUsers } = require('./scheduler.js');
-const reportingRoutes = require("./routes/reporting.routes.js");
+const reportingRoutes = require("./routes/reporting.routes.js");                  
 const weightSlabRoutes = require("./routes/weightslab.routes.js"); 
-
 const initializeSocket = require('./socket-handler.js');
 
 // SERVER & SOCKET.IO SETUP
 const app = express();
 const server = http.createServer(app);
-
 const allowedOrigins = [
     'http://localhost:5173',      
     'http://localhost:5174',      

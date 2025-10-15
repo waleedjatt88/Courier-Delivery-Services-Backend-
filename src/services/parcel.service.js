@@ -117,6 +117,10 @@ const confirmCodBooking = async (parcelId, customerId) => {
   if (!parcel || parcel.status !== "unconfirmed") {
     throw new Error("Invalid parcel or parcel has already been processed.");
   }
+   if (parcel.paymentStatus === 'completed') {
+      throw new Error(`This parcel has already been paid for via ${parcel.paymentMethod}. COD confirmation is not needed.`);
+  }
+
 
   parcel.paymentMethod = "COD";
   parcel.status = "order_placed";

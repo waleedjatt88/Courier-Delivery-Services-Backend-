@@ -25,8 +25,7 @@ const updateUser = async (userId, updateData, file) => {
     if (updateData.role) {
         if (updateData.role === 'admin' || updateData.role === 'agent') {
             updateData.isVerified = true;
-        }
-    }
+        }}
     await user.update(updateData);
     if (file) {
         const oldPicture = await Media.findOne({
@@ -41,8 +40,7 @@ const updateUser = async (userId, updateData, file) => {
             } catch (err) {
                 console.error("Could not delete old file, it might not exist:", err.message);
             }
-            await oldPicture.destroy();
-        }
+            await oldPicture.destroy();}
         await Media.create({
             url: `/images/${file.filename}`, 
             mediaType: 'PROFILE_PICTURE',
