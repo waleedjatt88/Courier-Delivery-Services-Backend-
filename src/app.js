@@ -12,7 +12,6 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const redisClient = require("./config/redis-client.js"); 
 const jwt = require('jsonwebtoken'); 
 
-
 //(Routes, Controllers)
 const authRoutes = require("./routes/auth.routes.js");
 const userRoutes = require("./routes/user.routes.js");

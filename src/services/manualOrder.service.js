@@ -6,26 +6,40 @@ const sendEmail = require('./notification.service.js');
 const invoiceService = require('./invoice.service.js');
 const stripeService = require('./payment.service.js'); 
 const { Op } = require('sequelize');
+const { validatePickupSlot } = require('../utils/validators.js');
 
 
 const prepareManualCheckout = async (customerData, parcelData) => {
-   let customer = await User.findOne({ where: { email: customerData.email } });
-if (!customer) {
-  const { fullName, email, phoneNumber } = customerData;
-  if (!fullName || !email || !phoneNumber) {
-    throw new Error("Guest customer's full name, email, and phone number are required.");
+   const { fullName, email, phoneNumber } = customerData;
+
+let customer = await User.findOne({ where: { email } });
+
+if (!fullName || !email || !phoneNumber) {
+  throw new Error("Guest customer's full name, email, and phone number are required.");
+}
+
+const phoneRegex = /^03\d{9}$/;
+if (!phoneRegex.test(phoneNumber)) {
+  throw new Error("Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).");
+}
+
+const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
+const emailDomain = email.split('@')[1]?.toLowerCase();
+if (!allowedDomains.includes(emailDomain)) {
+  throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
+}
+
+if (customer) {
+  if (customer.role !== 'guest') {
+    throw new Error("This email is already registered with a non-guest account. Manual booking not allowed.");
   }
-  const phoneRegex = /^03\d{9}$/;
-  if (!phoneRegex.test(phoneNumber)) {
-    throw new Error("Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).");
-  }
-  const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
-  const emailDomain = email.split('@')[1]?.toLowerCase();
-  if (!allowedDomains.includes(emailDomain)) {
-    throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
-  }
+
+  
+} else {
   customer = await User.create({
-    ...customerData,
+    fullName,
+    email,
+    phoneNumber,
     role: 'guest',
     isVerified: true,
     passwordHash: 'not_applicable'
@@ -38,6 +52,11 @@ if (!customer) {
         deliveryZoneId, 
         pickupSlot 
     } = parcelData;
+
+     if (deliveryType === 'scheduled') {
+        const [pickupDate, pickupTime] = pickupSlot.split(' ');
+        validatePickupSlot(pickupDate, pickupTime);
+    }
 
    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
        throw new Error(
@@ -112,6 +131,24 @@ const confirmPayNow = async (parcelId) => {
     });
     try {
     if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
+
+      const customer = parcel.Customer;
+    if (customer && customer.role === 'guest') {
+        const updates = {};
+        if (customerDataToUpdate.phoneNumber && customer.phoneNumber !== customerDataToUpdate.phoneNumber) {
+            updates.phoneNumber = customerDataToUpdate.phoneNumber;
+        }
+        if (customerDataToUpdate.fullName && customer.fullName !== customerDataToUpdate.fullName) {
+            updates.fullName = customerDataToUpdate.fullName;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await customer.update(updates);
+            console.log(`Guest customer ${customer.id} details updated.`);
+        }
+    }
+
+
         parcel.paymentMethod = 'CASH';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed';
@@ -141,7 +178,13 @@ const confirmPayNow = async (parcelId) => {
 const sendPaymentLink = async (parcelId) => {
     const parcel = await BookingParcel.findOne({ where: { id: parcelId, status: 'unconfirmed' }, include: ['Customer'] });
     if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
-    const session = await stripeService.createCheckoutSession(parcel.id, parcel.customerId);
+    const paymentIntentMetadata = {};
+    if (parcel.Customer.role === 'guest') {
+        paymentIntentMetadata.update_guest_name = customerData.fullName;
+        paymentIntentMetadata.update_guest_phone = customerData.phoneNumber;
+        paymentIntentMetadata.guest_customer_id = parcel.Customer.id;
+    }
+    const session = await stripeService.createCheckoutSession(parcel.id, parcel.customerId, paymentIntentMetadata);
    await sendEmail({
         email: parcel.Customer.email,
         subject: `Payment Required for Your Order #${parcel.trackingNumber}`,

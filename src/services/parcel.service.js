@@ -7,6 +7,7 @@ const { BookingParcel, User, Zone, Media } = db;
 const sendEmail = require("./notification.service.js");
 const invoiceService = require("./invoice.service.js");
 const { Op, Sequelize } = require("sequelize");
+const { validatePickupSlot } = require('../utils/validators.js');
 
 
 
@@ -23,6 +24,12 @@ const prepareCheckout = async (parcelData, customerId) => {
     pickupZoneId,
     deliveryZoneId,
   } = parcelData;
+
+   if (deliveryType === 'scheduled') {
+        const [pickupDate, pickupTime] = pickupSlot.split(' ');
+        validatePickupSlot(pickupDate, pickupTime);
+    }
+
   if (!pickupZoneId || !deliveryZoneId || !deliveryType) {
     throw new Error(
       "Pickup zone, Delivery zone, and Delivery Type are required."
@@ -31,6 +38,7 @@ const prepareCheckout = async (parcelData, customerId) => {
   if (deliveryType === "scheduled" && !pickupSlot) {
     throw new Error("Pickup Slot is required for scheduled delivery.");
   }
+  
   if (packageWeight > 50) {
       throw new Error("Maximum weight limit is 50kg. Please contact support for heavier parcels.");
   }

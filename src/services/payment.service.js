@@ -1,4 +1,3 @@
-
 'use strict';
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../../models');
@@ -44,6 +43,9 @@ const createCheckoutSession = async (parcelId, customerId) => {
         metadata: { 
             parcelId: parcel.id,
             customerId: customerId
+        },
+         payment_intent_data: {
+            metadata: paymentIntentMetadata
         }
     });
     console.log("Created Stripe Checkout Session:", session);
@@ -54,6 +56,25 @@ return { checkoutUrl: session.url };
 const handleSuccessfulPayment = async (session) => {
     const parcelId = session.metadata.parcelId;
     const customerId = session.metadata.customerId;
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+    const paymentIntentMetadata = paymentIntent.metadata;
+
+    if (paymentIntentMetadata.update_guest_name && paymentIntentMetadata.guest_customer_id) {
+        try {
+            const guestUser = await db.User.findByPk(paymentIntentMetadata.guest_customer_id);
+            if (guestUser && guestUser.role === 'guest') {
+                await guestUser.update({
+                    fullName: paymentIntentMetadata.update_guest_name,
+                    phoneNumber: paymentIntentMetadata.update_guest_phone
+                });
+                console.log(`Guest user ${guestUser.id} details updated via webhook.`);
+            }
+        } catch (err) {
+            console.error("Failed to update guest user from webhook metadata:", err);
+        }
+    }
+
     const parcel = await db.BookingParcel.findOne({ 
         where: { id: parcelId, status: 'unconfirmed' },
         include: [
