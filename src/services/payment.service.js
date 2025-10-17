@@ -7,8 +7,9 @@ const fs = require('fs').promises;
 const path = require('path');
 
 
-const createCheckoutSession = async (parcelId, customerId, paymentIntentMetadata = {}) => {
-    const parcel = await db.BookingParcel.findOne({
+
+const createCheckoutSession = async (parcelId, customerId, paymentIntentMetadata = {}, source = 'web') => {
+        const parcel = await db.BookingParcel.findOne({
         where: { id: parcelId, customerId: customerId }
     });
     if (!parcel) {
@@ -17,7 +18,7 @@ const createCheckoutSession = async (parcelId, customerId, paymentIntentMetadata
     if (parcel.paymentStatus === 'completed') {
         throw new Error('This parcel has already been paid for.');
     }
-     if (parcel.status === 'order_placed') {
+    if (parcel.status === 'order_placed') {
         throw new Error('This order has already been confirmed via Cash on Delivery (COD).');
     }
     if (parcel.status !== 'unconfirmed') {
@@ -34,23 +35,34 @@ const createCheckoutSession = async (parcelId, customerId, paymentIntentMetadata
         },
         quantity: 1,
     }];
+
+    let successUrl;
+    let cancelUrl;
+    if (source === 'chatbot') {
+        successUrl = `http://localhost:3000/customer/ai-chat?payment_status=success&parcel_id=${parcel.id}`;
+        cancelUrl = `http://localhost:3000/customer/ai-chat?payment_status=failed&parcel_id=${parcel.id}`;
+    } else {
+        successUrl = `http://localhost:3000/customer/payment?status=success&parcel_id=${parcel.id}`;
+        cancelUrl = `http://localhost:3000/customer/payment?status=failed&parcel_id=${parcel.id}`;
+    }
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: line_items,
         mode: 'payment',
-    success_url: `http://localhost:3000/customer/payment?status=success&parcel_id=${parcel.id}`,
-    cancel_url: `http://localhost:3000/customer/payment?status=failed&parcel_id=${parcel.id}`,
+        
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        
         metadata: { 
             parcelId: parcel.id,
             customerId: customerId
         },
-         payment_intent_data: {
+        payment_intent_data: {
             metadata: paymentIntentMetadata
         }
     });
-    console.log("Created Stripe Checkout Session:", session);
 
-return { checkoutUrl: session.url };
+    return { checkoutUrl: session.url };
 };
 
 const handleSuccessfulPayment = async (session) => {

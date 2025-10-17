@@ -6,12 +6,21 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const createCheckoutSession = async (req, res) => {
     try {
         const customerId = req.user.id;
-        const { parcelId } = req.body;
+        
+        const { parcelId, source } = req.body;
+
         if (!parcelId) {
             return res.status(400).json({ message: "Parcel ID is required." });
         }
-        const session = await paymentService.createCheckoutSession(parcelId, customerId);
+        const session = await paymentService.createCheckoutSession(
+            parcelId, 
+            customerId, 
+            {}, 
+            source 
+        );
+
         res.status(200).json(session);
+
     } catch (error) {
         console.error("Error creating Stripe session:", error);
         res.status(500).json({ message: "Failed to create payment session.", error: error.message });
@@ -46,6 +55,8 @@ const stripeWebhook = (req, res) => {
     }
     res.json({ received: true });
 };
+
+
 
 module.exports = {
     createCheckoutSession,
