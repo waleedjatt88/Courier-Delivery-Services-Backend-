@@ -1,4 +1,3 @@
-
 const db = require('../../models');
 const { User, BookingParcel, Pricing, Media, Zone } = db; 
 const { v4: uuidv4 } = require('uuid');
@@ -29,13 +28,7 @@ if (!allowedDomains.includes(emailDomain)) {
   throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
 }
 
-if (customer) {
-  if (customer.role !== 'guest') {
-    throw new Error("This email is already registered with a non-guest account. Manual booking not allowed.");
-  }
-
-  
-} else {
+if (!customer) {
   customer = await User.create({
     fullName,
     email,
@@ -120,35 +113,33 @@ if (customer) {
     return { parcelId: parcel.id, totalCharges: parcel.deliveryCharge };
 };
 
-const confirmPayNow = async (parcelId) => {
-    const parcel = await BookingParcel.findOne({ 
-        where: { id: parcelId, status: 'unconfirmed' }, 
-        include: [
-            { model: User, as: 'Customer' }, 
-            { model: Zone, as: 'PickupZone', attributes: ['name'] },
-            { model: Zone, as: 'DeliveryZone', attributes: ['name'] }
-        ] 
-    });
+const confirmPayNow = async (parcelId, customerDataToUpdate) => { 
     try {
-    if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
-
-      const customer = parcel.Customer;
-    if (customer && customer.role === 'guest') {
-        const updates = {};
-        if (customerDataToUpdate.phoneNumber && customer.phoneNumber !== customerDataToUpdate.phoneNumber) {
-            updates.phoneNumber = customerDataToUpdate.phoneNumber;
+        const parcel = await BookingParcel.findOne({
+            where: { id: parcelId, status: 'unconfirmed' },
+            include: [
+                { model: User, as: 'Customer' },
+                { model: Zone, as: 'PickupZone', attributes: ['name'] },
+                { model: Zone, as: 'DeliveryZone', attributes: ['name'] }
+            ]
+        });
+        if (!parcel) {
+            throw new Error("Invalid parcel or parcel already confirmed.");
         }
-        if (customerDataToUpdate.fullName && customer.fullName !== customerDataToUpdate.fullName) {
-            updates.fullName = customerDataToUpdate.fullName;
+        const customer = parcel.Customer;
+        if (customer && customer.role === 'guest' && customerDataToUpdate) {
+            const updates = {};
+            if (customerDataToUpdate.phoneNumber && customer.phoneNumber !== customerDataToUpdate.phoneNumber) {
+                updates.phoneNumber = customerDataToUpdate.phoneNumber;
+            }
+            if (customerDataToUpdate.fullName && customer.fullName !== customerDataToUpdate.fullName) {
+                updates.fullName = customerDataToUpdate.fullName;
+            }
+            if (Object.keys(updates).length > 0) {
+                await customer.update(updates);
+                console.log(`Guest customer ${customer.id} details updated.`);
+            }
         }
-
-        if (Object.keys(updates).length > 0) {
-            await customer.update(updates);
-            console.log(`Guest customer ${customer.id} details updated.`);
-        }
-    }
-
-
         parcel.paymentMethod = 'CASH';
         parcel.paymentStatus = 'completed';
         parcel.status = 'order_placed';
@@ -175,30 +166,61 @@ const confirmPayNow = async (parcelId) => {
         throw error;  
     }};
 
-const sendPaymentLink = async (parcelId) => {
-    const parcel = await BookingParcel.findOne({ where: { id: parcelId, status: 'unconfirmed' }, include: ['Customer'] });
-    if (!parcel) throw new Error("Invalid parcel or parcel already confirmed.");
-    const paymentIntentMetadata = {};
-    if (parcel.Customer.role === 'guest') {
-        paymentIntentMetadata.update_guest_name = customerData.fullName;
-        paymentIntentMetadata.update_guest_phone = customerData.phoneNumber;
-        paymentIntentMetadata.guest_customer_id = parcel.Customer.id;
-    }
-    const session = await stripeService.createCheckoutSession(parcel.id, parcel.customerId, paymentIntentMetadata);
-   await sendEmail({
-        email: parcel.Customer.email,
-        subject: `Payment Required for Your Order #${parcel.trackingNumber}`,
-        template: 'paymentLink', 
-        data: {
-            customerName: parcel.Customer.fullName,
-            trackingNumber: parcel.trackingNumber,
-            totalCharges: parcel.deliveryCharge,
-            paymentUrl: session.checkoutUrl 
-        }
-    });
-    return { message: "Payment link has been sent to the customer." };
-};
 
+const sendPaymentLink = async (parcelId, customerData) => { 
+    try {
+        const parcel = await BookingParcel.findOne({ 
+            where: { id: parcelId, status: 'unconfirmed' }, 
+            include: ['Customer'] 
+        });
+
+        if (!parcel) {
+            throw new Error("Invalid parcel or parcel already confirmed.");
+        }
+
+        if (!parcel.Customer || !parcel.Customer.email) {
+            throw new Error("Customer email not found.");
+        }
+
+        const paymentIntentMetadata = {};
+        if (parcel.Customer && parcel.Customer.role === 'guest' && customerData) {
+            paymentIntentMetadata.update_guest_name = customerData.fullName;
+            paymentIntentMetadata.update_guest_phone = customerData.phoneNumber;
+            paymentIntentMetadata.guest_customer_id = parcel.Customer.id;
+        }
+
+        const session = await stripeService.createCheckoutSession(
+            parcel.id, 
+            parcel.customerId, 
+            paymentIntentMetadata
+        );
+
+        try {
+            await sendEmail({
+                email: parcel.Customer.email,
+                subject: `Payment Required for Your Order #${parcel.trackingNumber}`,
+                template: 'paymentLink', 
+                data: {
+                    customerName: customerData?.fullName || parcel.Customer.fullName,
+                    trackingNumber: parcel.trackingNumber,
+                    totalCharges: parcel.deliveryCharge,
+                    paymentUrl: session.checkoutUrl 
+                }
+            });
+            console.log(`✅ Payment link email sent to ${parcel.Customer.email}`);
+        } catch (emailError) {
+            console.error("Failed to send payment link email:", emailError);
+        }
+
+        return { 
+            message: "Payment link has been sent to the customer.",
+            paymentUrl: session.checkoutUrl 
+        };
+    } catch (error) {
+        console.error("Error in sendPaymentLink:", error);
+        throw error;
+    }
+};
 module.exports = {
     prepareManualCheckout,
     confirmPayNow,

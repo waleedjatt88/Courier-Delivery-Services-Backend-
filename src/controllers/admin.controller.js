@@ -245,17 +245,33 @@ const prepareManualOrder = async (req, res) => {
 
 const confirmPayNowOrder = async (req, res) => {
     try {
-        const parcel = await manualOrderService.confirmPayNow(req.params.id);
-        res.status(200).json({ message: "Manual order confirmed with CASH payment.", parcel });
-    } catch (error) { res.status(400).json({ message: error.message }); }
+        const parcelId = req.params.id;
+        const { customerData } = req.body;
+        if (!customerData) {
+            return res.status(400).json({ message: "customerData object is required in the request body." });
+        }
+        const parcel = await manualOrderService.confirmPayNow(parcelId, customerData);
+        res.status(200).json({ message: "Manual order confirmed with CASH payment Successful.", parcel });
+    } catch (error) { 
+        res.status(400).json({ message: error.message }); 
+    }
 };
 
 const sendPaymentLink = async (req, res) => {
-    try {
-        const result = await manualOrderService.sendPaymentLink(req.params.id);
+        try {
+        const { id } = req.params;
+        const { customerData } = req.body;
+        if (!customerData) {
+            return res.status(400).json({ message: "customerData is required in the request body." });
+        }
+        const result = await manualOrderService.sendPaymentLink(id, customerData);
         res.status(200).json(result);
-    } catch (error) { res.status(500).json({ message: error.message }); }
+
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 };
+
 
 const confirmCodPayment = async (req, res) => {
     try {

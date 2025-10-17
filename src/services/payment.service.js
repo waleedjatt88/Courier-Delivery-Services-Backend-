@@ -7,7 +7,7 @@ const fs = require('fs').promises;
 const path = require('path');
 
 
-const createCheckoutSession = async (parcelId, customerId) => {
+const createCheckoutSession = async (parcelId, customerId, paymentIntentMetadata = {}) => {
     const parcel = await db.BookingParcel.findOne({
         where: { id: parcelId, customerId: customerId }
     });
