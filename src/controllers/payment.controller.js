@@ -27,6 +27,21 @@ const createCheckoutSession = async (req, res) => {
     }
 };
 
+
+const createCheckoutSessionForChatbot = async (req, res) => {
+    try {
+        const { parcelId, customerId } = req.body;
+        if (!parcelId || !customerId) {
+            return res.status(400).json({ message: "parcelId and customerId are required." });
+        }
+        const session = await paymentService.createCheckoutSession(parcelId, customerId, {}, 'chatbot');
+        res.status(200).json(session);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to create payment session for chatbot." });
+    }
+};
+
+
 const stripeWebhook = (req, res) => {
     const signature = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -60,5 +75,6 @@ const stripeWebhook = (req, res) => {
 
 module.exports = {
     createCheckoutSession,
-    stripeWebhook ,
+    stripeWebhook,
+    createCheckoutSessionForChatbot
 };
