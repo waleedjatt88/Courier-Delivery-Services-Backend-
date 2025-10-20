@@ -10,7 +10,9 @@ router.get('/stats/delivered', [verifyToken, isAdmin], reportingController.getDe
 router.get('/stats/bookings', [verifyToken, isAdmin], reportingController.getBookingStats);
 router.get('/reports/delivered-parcels', [verifyToken, isAdmin], reportingController.getParcelsReport);
 router.get('/stats/revenue', [verifyToken, isAdmin], reportingController.getRevenueStats);
-router.get('/reports/all-users-fraud', [verifyToken, isAdmin], reportingController.getAllUsersFraudReport);
+
+router.get('/reports/all-users-fraud',[verifyToken, isAdmin],reportingController.getAllUsersFraudReport);
+router.post('/analyze-fraud/:customerId', [verifyToken, isAdmin], reportingController.analyzeUser);
 
 
 module.exports = router;

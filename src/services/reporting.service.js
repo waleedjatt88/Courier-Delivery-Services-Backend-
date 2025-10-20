@@ -2,6 +2,11 @@
 const db = require('../../models');
 const { BookingParcel, User } = db;
 const { Op, Sequelize, fn, col, literal } = require("sequelize");
+const { spawn } = require('child_process'); 
+const path = require('path'); 
+const adminService = require('./admin.service.js');
+
+
 
 
 const getLastTwelveMonthsLabels = () => {
@@ -333,11 +338,89 @@ const generateAllUsersFraudReport = async () => {
     return fullReport;
 };
 
+const generateUserFraudReport = async (customerId) => {
+    const statsResult = await BookingParcel.findOne({
+        where: { customerId: customerId },
+        attributes: [
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalAttempts'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'cancelled' AND \"paymentStatus\" = 'cancelled' THEN 1 ELSE 0 END")), 'num_cancellations'],
+            [Sequelize.fn('SUM', Sequelize.literal("CASE WHEN status = 'unconfirmed' THEN 1 ELSE 0 END")), 'num_of_unconfirmed_parcels']
+        ],
+        raw: true
+    });
+    const totalAttempts = parseInt(statsResult.totalAttempts, 10) || 0;
+    const numCancellations = parseInt(statsResult.num_cancellations, 10) || 0;
+    const numOfUnconfirmedParcels = parseInt(statsResult.num_of_unconfirmed_parcels, 10) || 0;
+    const totalFailedAttempts = numCancellations + numOfUnconfirmedParcels;
+    let paymentFailRatio = 0.0;
+    if (totalAttempts > 0) {
+        const ratio = totalFailedAttempts / totalAttempts;
+        paymentFailRatio = parseFloat(ratio.toFixed(2));
+    }
+    return {
+        customerId: parseInt(customerId, 10),
+        num_cancellations: numCancellations,
+        num_of_unconfirmed_parcels: numOfUnconfirmedParcels,
+        payment_fail_ratio: paymentFailRatio,
+    };
+};
+
+const analyzeUserFraud = (customerId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const fraudData = await generateUserFraudReport(customerId);
+            const scriptPath = path.join(__dirname, '../../ai_model/predict.py');
+            const pythonProcess = spawn('python3', [scriptPath]);
+            
+            let resultData = '';
+            let errorData = '';
+
+            pythonProcess.stdout.on('data', (data) => {
+                resultData += data.toString();
+            });
+
+            pythonProcess.stderr.on('data', (data) => {
+                errorData += data.toString();
+            });
+            pythonProcess.on('close', async (code) => {
+                if (code === 0) { 
+                    try {
+                        const analysisResult = JSON.parse(resultData);
+                        const { is_suspicious } = analysisResult;
+
+                        if (typeof is_suspicious === 'boolean') {
+                            await adminService.setUserSuspiciousFlag(customerId, is_suspicious);
+                            resolve({ 
+                                message: `User analysis complete. Suspicious flag set to ${is_suspicious}.`,
+                                analysis: analysisResult 
+                            });
+                        } else {
+                            reject(new Error("AI model returned an invalid response."));
+                        }
+                    } catch (parseError) {
+                        reject(new Error("Failed to parse AI model's JSON response."));
+                    }
+                } else { 
+                    reject(new Error(`AI script exited with error code ${code}: ${errorData}`));
+                }
+            });
+            pythonProcess.stdin.write(JSON.stringify(fraudData));
+            pythonProcess.stdin.end();
+
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 module.exports = {
     getBookingStats,
     generateParcelsReport,
     getRevenueStats,
     generateAllUsersFraudReport,
     getDeliveredStats,
-    getRevenueGraphStats
+    getRevenueGraphStats,
+    analyzeUserFraud,
+    generateUserFraudReport
+
 };

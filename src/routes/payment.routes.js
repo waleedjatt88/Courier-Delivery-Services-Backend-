@@ -9,12 +9,7 @@ const { setChatbotSource } = require('../middleware/source.middleware.js');
 
 router.post('/create-checkout-session', verifyToken, paymentController.createCheckoutSession);
 router.post( '/webhook', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
-router.post(
-    '/ai/create-checkout-session', 
-    verifyToken,                   
-    setChatbotSource,             
-    paymentController.createCheckoutSession 
-);
+router.post('/ai/create-checkout-session',verifyToken,setChatbotSource,paymentController.createCheckoutSession);
 
 
 

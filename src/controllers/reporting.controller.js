@@ -72,11 +72,25 @@ const getRevenueGraphStats = async (req, res) => {
     }
 };
 
+const analyzeUser = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        const result = await reportingService.analyzeUserFraud(customerId);
+        res.status(200).json(result);
+
+    } catch (error) {
+        console.error("Error during user fraud analysis:", error);
+        res.status(500).json({ message: error.message || "Failed to analyze user for fraud." });
+    }
+};
+
+
 module.exports = {
     getBookingStats,
     getParcelsReport,
     getRevenueStats,
     getAllUsersFraudReport,
     getDeliveredStats,
-    getRevenueGraphStats
+    getRevenueGraphStats,
+    analyzeUser
 };
