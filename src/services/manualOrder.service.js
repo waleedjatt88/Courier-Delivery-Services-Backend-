@@ -47,8 +47,7 @@ if (!customer) {
     } = parcelData;
 
      if (deliveryType === 'scheduled') {
-        const [pickupDate, pickupTime] = pickupSlot.split(' ');
-        validatePickupSlot(pickupDate, pickupTime);
+        validatePickupSlot(pickupSlot);
     }
 
    if (!pickupZoneId || !deliveryZoneId || !deliveryType) {

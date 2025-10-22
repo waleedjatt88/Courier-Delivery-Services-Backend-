@@ -29,6 +29,9 @@ if (!allowedDomains.includes(emailDomain)) {
 
   const existingUser = await User.findOne({ where: { email } });
     if (createdByAdmin) {
+        if (existingUser && existingUser.isVerified) {
+            throw new Error('User with this email already exists.');
+        }
         if (existingUser) {
             existingUser.isVerified = true;
             existingUser.otp = null;

@@ -22,3 +22,5 @@ redisClient.connect().catch((err) => {
 });
 
 module.exports = redisClient;
+
+
