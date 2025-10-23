@@ -32,8 +32,11 @@ const createTicket = async (ticketData, customerId) => {
     return newTicket;
 };
 
-const getAllTickets = async () => {
-    const tickets = await db.Ticket.findAll({
+const getAllTickets = async (pageParam = 1, limitParam = 10) => {
+    const page = Math.max(parseInt(pageParam) || 1, 1);
+    const limit = Math.max(parseInt(limitParam) || 10, 1);
+    const offset = (page - 1) * limit;
+    const { count, rows: tickets } = await db.Ticket.findAndCountAll({
         order: [['status', 'ASC'], ['createdAt', 'DESC']], 
         include: [
             {
@@ -44,9 +47,19 @@ const getAllTickets = async () => {
                 model: db.BookingParcel, 
                 attributes: ['id', 'trackingNumber']
             }
-        ]
+        ],
+        limit: limit,
+        offset: offset
     });
-    return tickets;
+    return {
+        tickets,
+        pagination: {
+            totalItems: count,
+            currentPage: page,
+            itemsPerPage: limit,
+            totalPages: Math.ceil(count / limit),
+        }
+    };
 };
 
 const getTicketById = async (ticketId) => {

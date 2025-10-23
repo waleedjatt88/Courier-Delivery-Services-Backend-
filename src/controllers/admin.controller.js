@@ -122,21 +122,14 @@ const unsuspendUser = async (req, res) => {
 
 const getAllTickets = async (req, res) => {
     try {
-        const tickets = await ticketService.getAllTickets();
-        return res.status(200).json({
-            success: true,
-            message: tickets.length > 0 ? "Tickets fetched successfully." : "No tickets found.",
-            count: tickets.length,
-            data: tickets,
-        });
+        const { page, limit } = req.query;
+        const result = await ticketService.getAllTickets(page, limit);
+        res.status(200).json(result);
     } catch (error) {
-        console.error("Error in getAllTickets:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to fetch tickets.",
-            error: error.message || "Internal Server Error",
-        });
-    }};
+        console.error("Error fetching all tickets:", error);
+        res.status(500).json({ message: "Failed to fetch tickets." });
+    }
+};
 
 const getTicketById = async (req, res) => {
     try {
