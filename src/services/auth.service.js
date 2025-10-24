@@ -18,8 +18,12 @@ const register = async (userData, createdByAdmin = false) => {
         throw new Error('Full name, email, phone number, and password are required.');
     }
     const phoneRegex = /^03\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    if (!phoneRegex.test(phoneNumber)){
         throw new Error('Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).');
+    }
+    const existingPhone = await User.findOne({ where: { phoneNumber } });
+    if (existingPhone) {
+        throw new Error('This phone number is already registered, Please use a different one.');
     }
     const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
 const emailDomain = email.split('@')[1]?.toLowerCase();

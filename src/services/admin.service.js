@@ -29,7 +29,7 @@ const getAllUsers = async (roleType = null, pageParam = 1, limitParam = 10) => {
     const { count, rows: users } = await User.findAndCountAll({
         where: whereClause,
         attributes: { exclude: ['passwordHash'] },
-        order: [['id', 'ASC']],
+        order: [['id', 'DESC']],
         limit,
         offset
     });
