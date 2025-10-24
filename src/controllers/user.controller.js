@@ -79,9 +79,23 @@ const updateMyProfile = async (req, res) => {
   }
 };
 
+const getMyProfilePicture = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const picture = await userService.getMyProfilePicture(userId);
+        if (!picture) {
+            return res.status(404).json({ message: "Profile picture not found." });
+        }
+        res.status(200).json(picture);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch profile picture." });
+    }
+};
+
 module.exports = {
   getUserById,
   updateUser,
   getMyProfile,
   updateMyProfile,
+  getMyProfilePicture
 };

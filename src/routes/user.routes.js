@@ -11,5 +11,7 @@ router.route("/me")
     upload.single('profilePicture'), 
     userController.updateMyProfile
   );
+  router.get('/me/profile-picture', verifyToken, userController.getMyProfilePicture);
+
 
 module.exports = router;

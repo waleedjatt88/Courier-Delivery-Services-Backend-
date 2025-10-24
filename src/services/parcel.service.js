@@ -548,23 +548,30 @@ const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
   if (!parcel) {
     throw new Error("Parcel not found.");
   }
+
   if (parcel.status !== "cancelled") {
     throw new Error(
       `Only cancelled parcels can be rescheduled. Current status: '${parcel.status}'.`
     );
   }
-
   if (!pickupSlot || pickupSlot.trim() === "") {
     throw new Error("New pickup slot is required when rescheduling.");
   }
-  const originalPickupSlot = pickupSlot;
+  try {
+    validatePickupSlot(pickupSlot);
+  } catch (err) {
+    console.error("[PickupSlot Validation Failed]:", err.message);
+    throw new Error(err.message || "Invalid pickup slot format or timing.");
+  }
+
   try {
     await parcel.update({
       status: "order_placed",
       agentId: null,
-      pickupSlot: originalPickupSlot,
+      pickupSlot: pickupSlot,
       updatedAt: new Date(),
     });
+
     await parcel.reload();
     return parcel;
   } catch (error) {
@@ -572,6 +579,7 @@ const rescheduleParcelByAdmin = async (parcelId, pickupSlot) => {
     throw new Error("Failed to reschedule parcel. Please try again.");
   }
 };
+
 
 const acceptJobByAgent = async (parcelId, agentId) => {
   const parcel = await db.BookingParcel.findOne({

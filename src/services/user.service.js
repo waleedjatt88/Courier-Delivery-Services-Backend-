@@ -52,7 +52,22 @@ const updateUser = async (userId, updateData, file) => {
     return updatedUserWithDetails;
 };
 
+const getMyProfilePicture = async (userId) => {
+    const profilePic = await Media.findOne({
+        where: {
+            relatedId: userId,
+            relatedType: 'user'
+        },
+        attributes: ['url', 'mediaType'] 
+    });
+
+    return profilePic;
+};
+
+
+
 module.exports = {
     getUserById,
     updateUser,
+    getMyProfilePicture
 };
