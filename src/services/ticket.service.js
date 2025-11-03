@@ -33,33 +33,38 @@ const createTicket = async (ticketData, customerId) => {
 };
 
 const getAllTickets = async (pageParam = 1, limitParam = 10) => {
-    const page = Math.max(parseInt(pageParam) || 1, 1);
-    const limit = Math.max(parseInt(limitParam) || 10, 1);
-    const offset = (page - 1) * limit;
-    const { count, rows: tickets } = await db.Ticket.findAndCountAll({
-        order: [['status', 'ASC'], ['createdAt', 'DESC']], 
-        include: [
-            {
-                model: db.User, 
-                attributes: ['id', 'fullName', 'email']
-            },
-            {
-                model: db.BookingParcel, 
-                attributes: ['id', 'trackingNumber']
-            }
-        ],
-        limit: limit,
-        offset: offset
-    });
-    return {
-        tickets,
-        pagination: {
-            totalItems: count,
-            currentPage: page,
-            itemsPerPage: limit,
-            totalPages: Math.ceil(count / limit),
-        }
-    };
+  const page = Math.max(parseInt(pageParam) || 1, 1);
+  const limit = Math.max(parseInt(limitParam) || 10, 1);
+  const offset = (page - 1) * limit;
+  const { count, rows: tickets } = await db.Ticket.findAndCountAll({
+    order: [['status', 'ASC'], ['createdAt', 'DESC']],
+    include: [
+      {
+        model: db.User,
+        attributes: ['id', 'fullName', 'email'],
+      },
+      {
+        model: db.BookingParcel,
+        attributes: ['id', 'trackingNumber'],
+      },
+    ],
+    limit,
+    offset,
+  });
+
+  const message =
+    count > 0 ? 'Tickets fetched Successfully' : 'Tickets not found';
+
+  return {
+    message,
+    tickets,
+    pagination: {
+      totalItems: count,
+      currentPage: page,
+      itemsPerPage: limit,
+      totalPages: Math.ceil(count / limit),
+    },
+  };
 };
 
 const getTicketById = async (ticketId) => {
