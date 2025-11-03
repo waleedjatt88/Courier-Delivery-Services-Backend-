@@ -92,11 +92,11 @@ const initializeSocket = (io) => {
       isReadByAdmin: isReadByAdmin
     });
     chatNamespace.to(roomName).emit("receiveMessage", newMessage);
-    if (senderRole === 'customer') {
-      chatNamespace.to('admin_room').emit('new_unread_message', { customerId: customerId });
-    } else if (senderRole === 'admin') {
-      chatNamespace.to('admin_room').emit('update_unread_count', { customerId: customerId, unreadCount: 0 });
-    }
+        if (senderRole === 'customer') {
+          chatNamespace.emit('new_unread_message', { customerId });
+        } else if (senderRole === 'admin') {
+          chatNamespace.emit('update_unread_count', { customerId, unreadCount: 0 });
+        }
 
     console.log(`Message from ${senderRole} ${senderId} sent to room ${roomName}`);
 

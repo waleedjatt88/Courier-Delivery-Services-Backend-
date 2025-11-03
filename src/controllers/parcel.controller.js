@@ -6,28 +6,28 @@ const prepareCheckout = async (req, res) => {
   try {
     const parcelData = req.body;
     const customerId = req.user.id;
+
     if (
       !parcelData.pickupAddress ||
       !parcelData.deliveryAddress ||
       !parcelData.packageWeight
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Pickup address, delivery address, and package weight are required.",
-        });
+      return res.status(400).json({
+        message:
+          "Pickup address, delivery address, and package weight are required.",
+      });
     }
-
     const parcel = await parcelService.prepareCheckout(parcelData, customerId);
-    res
-      .status(201)
-      .json({ message: "Parcel booked successfully!", parcel: parcel });
+    return res.status(201).json({
+      message: "Parcel booked successfully!",
+      parcel,
+    });
   } catch (error) {
     console.error("Error booking parcel:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to book parcel.", error: error.message });
+    const statusCode = error.statusCode || 400;
+    return res.status(statusCode).json({
+      message: error.message || "Failed to book parcel.",
+    });
   }
 };
 

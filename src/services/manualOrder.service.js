@@ -11,33 +11,38 @@ const { validatePickupSlot } = require('../utils/validators.js');
 const prepareManualCheckout = async (customerData, parcelData) => {
    const { fullName, email, phoneNumber } = customerData;
 
-let customer = await User.findOne({ where: { email } });
+   const existingPhoneUser = await User.findOne({ where: { phoneNumber } });
+   if (existingPhoneUser) {
+     throw new Error("This phone number is already registered, Please use a different one.");
+   }
 
-if (!fullName || !email || !phoneNumber) {
-  throw new Error("Guest customer's full name, email, and phone number are required.");
-}
+   let customer = await User.findOne({ where: { email } });
 
-const phoneRegex = /^03\d{9}$/;
-if (!phoneRegex.test(phoneNumber)) {
-  throw new Error("Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).");
-}
+   if (!fullName || !email || !phoneNumber) {
+     throw new Error("Guest customer's full name, email, and phone number are required.");
+   }
 
-const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
-const emailDomain = email.split('@')[1]?.toLowerCase();
-if (!allowedDomains.includes(emailDomain)) {
-  throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
-}
+   const phoneRegex = /^03\d{9}$/;
+   if (!phoneRegex.test(phoneNumber)) {
+     throw new Error("Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).");
+   }
 
-if (!customer) {
-  customer = await User.create({
-    fullName,
-    email,
-    phoneNumber,
-    role: 'guest',
-    isVerified: true,
-    passwordHash: 'not_applicable'
-  });
-}
+   const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
+   const emailDomain = email.split('@')[1]?.toLowerCase();
+   if (!allowedDomains.includes(emailDomain)) {
+     throw new Error("Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for guest customers.");
+   }
+
+   if (!customer) {
+     customer = await User.create({
+       fullName,
+       email,
+       phoneNumber,
+       role: 'guest',
+       isVerified: true,
+       passwordHash: 'not_applicable'
+     });
+   }
      const { 
         packageWeight, 
         deliveryType, 
