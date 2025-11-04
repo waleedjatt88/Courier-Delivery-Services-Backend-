@@ -269,10 +269,6 @@ const sendPaymentLink = async (req, res) => {
 const confirmCodPayment = async (req, res) => {
     try {
         const parcelId = req.params.id;
-        const { customerData } = req.body; 
-         if (!customerData) {
-            throw new Error("customerData is required to confirm the order.");
-        }
         const updatedParcel = await parcelService.confirmCodPaymentByAdmin(parcelId);
         res.status(200).json({
             message: `COD payment for parcel ${updatedParcel.trackingNumber} has been confirmed.`,

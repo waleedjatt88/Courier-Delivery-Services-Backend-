@@ -209,6 +209,7 @@ const getMyParcels = async (customerId, pageParam = 1, limitParam = 10) => {
   const page = Math.max(parseInt(pageParam) || 1, 1);
   const limit = Math.max(parseInt(limitParam) || 10, 1);
   const offset = (page - 1) * limit;
+
   const whereClause = {
     customerId: customerId,
     status: {
@@ -221,8 +222,17 @@ const getMyParcels = async (customerId, pageParam = 1, limitParam = 10) => {
     limit: limit,
     offset: offset
   });
+  const modifiedParcels = parcels.map(parcel => {
+        const parcelData = parcel.toJSON(); 
+
+    if (parcelData.status === 'scheduled') {
+      parcelData.status = 'order_placed';
+    }
+        return parcelData;
+  });
+  
   return {
-    parcels,
+    parcels: modifiedParcels, 
     pagination: {
       totalItems: count,
       currentPage: page,
