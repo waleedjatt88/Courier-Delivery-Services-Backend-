@@ -4,28 +4,32 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 
 const createCheckoutSession = async (req, res) => {
-    try {
-        const customerId = req.user.id;
-        
-        const { parcelId, source } = req.body;
+  try {
+    const customerId = req.user.id;
+    const { parcelId, source } = req.body;
 
-        if (!parcelId) {
-            return res.status(400).json({ message: "Parcel ID is required." });
-        }
-        const session = await paymentService.createCheckoutSession(
-            parcelId, 
-            customerId, 
-            {}, 
-            source 
-        );
-
-        res.status(200).json(session);
-
-    } catch (error) {
-        console.error("Error creating Stripe session:", error);
-        res.status(500).json({ message: "Failed to create payment session.", error: error.message });
+    if (!parcelId) {
+      return res.status(400).json({ message: "Parcel ID is required." });
     }
+    const session = await paymentService.createCheckoutSession(
+      parcelId,
+      customerId,
+      {},
+      source
+    );
+
+    res.status(200).json(session);
+  } catch (error) {
+    console.error("Error creating Stripe session:", error);
+    const errorMessage =
+      error.message?.startsWith("Failed to") 
+        ? error.message 
+        : `Failed to create payment session. ${error.message}`;
+
+    res.status(500).json({ message: errorMessage });
+  }
 };
+
 
 
 const createCheckoutSessionForChatbot = async (req, res) => {
