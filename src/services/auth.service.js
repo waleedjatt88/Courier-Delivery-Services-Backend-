@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('./notification.service.js');
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 
 const OtpType = {
     EMAIL_VERIFICATION: 'email_verification',
@@ -18,25 +19,37 @@ const register = async (userData, createdByAdmin = false) => {
         throw new Error('Full name, email, phone number, and password are required.');
     }
     const phoneRegex = /^03\d{9}$/;
-    if (!phoneRegex.test(phoneNumber)){
+    if (!phoneRegex.test(phoneNumber)) {
         throw new Error('Invalid phone number format. It must be 11 digits and start with 03 (e.g., 03xxxxxxxxx).');
     }
-    const existingPhone = await User.findOne({ where: { phoneNumber } });
-    if (existingPhone) {
-        throw new Error('This phone number is already registered, Please use a different one.');
-    }
     const allowedDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
-const emailDomain = email.split('@')[1]?.toLowerCase();
-if (!allowedDomains.includes(emailDomain)) {
-  throw new Error('Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for registration.');
-}
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    if (!allowedDomains.includes(emailDomain)) {
+        throw new Error('Only Gmail, Hotmail, Yahoo, and Outlook emails are allowed for registration.');
+    }
+    const existingUser = await User.findOne({ where: { email } });
 
-  const existingUser = await User.findOne({ where: { email } });
     if (createdByAdmin) {
-        if (existingUser && existingUser.isVerified) {
-            throw new Error('User with this email already exists.');
+            const phoneInUse = await User.findOne({ 
+            where: { 
+                phoneNumber, 
+                email: { [Op.ne]: email } 
+            } 
+        });
+        if (phoneInUse) {
+            throw new Error('This phone number is already registered to another account.');
         }
+
         if (existingUser) {
+            if (existingUser.isVerified) {
+                throw new Error('User with this email already exists.');
+            }
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+
+            existingUser.fullName = fullName;
+            existingUser.phoneNumber = phoneNumber;
+            existingUser.passwordHash = passwordHash;
             existingUser.isVerified = true;
             existingUser.otp = null;
             existingUser.otpExpires = null;
@@ -59,16 +72,39 @@ if (!allowedDomains.includes(emailDomain)) {
             delete userResult.passwordHash;
             return { user: userResult, wasCreatedByAdmin: true };
         }
-    } 
-    else {
+
+    } else {
+        
         if (existingUser) {
             if (existingUser.isVerified) {
                 throw new Error('User with this email already exists and is verified.');
-            } else {
+            } else {                
+                const phoneInUse = await User.findOne({ 
+                    where: { 
+                        phoneNumber, 
+                        email: { [Op.ne]: email } 
+                    } 
+                });
+                
+                if (phoneInUse) {
+                    throw new Error('This phone number is already registered to another account.');
+                }
+                const salt = await bcrypt.genSalt(10);
+                const passwordHash = await bcrypt.hash(password, salt);
+
+                existingUser.fullName = fullName;
+                existingUser.phoneNumber = phoneNumber;
+                existingUser.passwordHash = passwordHash;
+                
+                await existingUser.save(); 
                 await sendOtp(email, OtpType.EMAIL_VERIFICATION);
-                return { message: 'This email is already registered but not verified. A new OTP has been sent. Please verify.' };
+                return { message: 'This email is already registered but not verified. Your details have been updated and a new OTP has been sent. Please verify.' };
             }
         } else {
+            const existingPhone = await User.findOne({ where: { phoneNumber } });
+            if (existingPhone) {
+                throw new Error('This phone number is already registered. Please use a different one.');
+            }
             const salt = await bcrypt.genSalt(10);
             const passwordHash = await bcrypt.hash(password, salt);
             
@@ -86,6 +122,8 @@ if (!allowedDomains.includes(emailDomain)) {
         }
     }
 };
+
+
 
 const login = async (loginData) => {
     const { email, password } = loginData;
