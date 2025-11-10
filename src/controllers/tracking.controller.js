@@ -43,7 +43,6 @@ const getTrackingStatus = async (req, res) => {
         packageWeight: parcel.packageWeight,
         packageSize: parcel.packageSize,
     });
-
   } catch (error) {
     console.error('Tracking error:', error);
     res.status(500).json({
