@@ -13,7 +13,6 @@ router.post('/ai/create-checkout-session',verifyToken,setChatbotSource,paymentCo
 
 
 
-//  STRIPE_WEBHOOK_SECRET= whsec_d7768775228e5ef604149a1069acd6c63a83b665234ed32b3d2403c414dc590c
 
 module.exports = router;
 
